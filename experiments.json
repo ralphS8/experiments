@@ -1,4 +1,189 @@
 {
-  "updated": "2026-10-12T21:29:45Z",
-  "pieces": []
+  "updated": "2026-10-12T21:54:36Z",
+  "pieces": [
+    {
+      "title": "Embracing Power",
+      "year": "2026",
+      "medium": "Title Treatment",
+      "src": "media/2026%20-%20Embracing%20Power%20-%20Title%20Treatment.mp4",
+      "type": "video",
+      "poster": "media/2026%20-%20Embracing%20Power%20-%20Title%20Treatment.poster.jpg",
+      "w": 848,
+      "h": 480,
+      "sound": false
+    },
+    {
+      "title": "Line Noise",
+      "year": "2026",
+      "medium": "Cavalry",
+      "src": "media/2026%20-%20Line%20Noise%20-%20Cavalry.mp4",
+      "type": "video",
+      "poster": "media/2026%20-%20Line%20Noise%20-%20Cavalry.poster.jpg",
+      "w": 1080,
+      "h": 1080,
+      "sound": false
+    },
+    {
+      "title": "305",
+      "year": "2025",
+      "medium": "Motion",
+      "src": "media/2025%20-%20305%20-%20Motion%20-%20sound.mp4",
+      "type": "video",
+      "poster": "media/2025%20-%20305%20-%20Motion%20-%20sound.poster.jpg",
+      "w": 1280,
+      "h": 960,
+      "sound": true
+    },
+    {
+      "title": "Arbol de Manzanilla",
+      "year": "2025",
+      "medium": "Motion / Illustration",
+      "src": "media/2025%20-%20Arbol%20de%20Manzanilla%20-%20Motion_Illustration.mp4",
+      "type": "video",
+      "poster": "media/2025%20-%20Arbol%20de%20Manzanilla%20-%20Motion_Illustration.poster.jpg",
+      "w": 720,
+      "h": 1280,
+      "sound": false
+    },
+    {
+      "title": "BlueJ",
+      "year": "2025",
+      "medium": "Illustration",
+      "src": "media/2025%20-%20BlueJ%20-%20Illustration.png",
+      "type": "image",
+      "w": 1080,
+      "h": 1350,
+      "sound": false
+    },
+    {
+      "title": "Boxing Day Exp",
+      "year": "2025",
+      "medium": "Motion",
+      "src": "media/2025%20-%20Boxing%20Day%20Exp%20-%20Motion.mp4",
+      "type": "video",
+      "poster": "media/2025%20-%20Boxing%20Day%20Exp%20-%20Motion.poster.jpg",
+      "w": 1080,
+      "h": 1080,
+      "sound": false
+    },
+    {
+      "title": "Particle Murmurations",
+      "year": "2025",
+      "medium": "Houdini",
+      "src": "media/2025%20-%20Particle%20Murmurations%20-%20Houdini.mp4",
+      "type": "video",
+      "poster": "media/2025%20-%20Particle%20Murmurations%20-%20Houdini.poster.jpg",
+      "w": 1080,
+      "h": 1080,
+      "sound": false
+    },
+    {
+      "title": "Sand Wave",
+      "year": "2025",
+      "medium": "Houdini",
+      "src": "media/2025%20-%20Sand%20Wave%20-%20Houdini.mp4",
+      "type": "video",
+      "poster": "media/2025%20-%20Sand%20Wave%20-%20Houdini.poster.jpg",
+      "w": 1024,
+      "h": 1280,
+      "sound": false
+    },
+    {
+      "title": "Xmas Tracks",
+      "year": "2025",
+      "medium": "Motion",
+      "src": "media/2025%20-%20Xmas%20Tracks%20-%20Motion.mp4",
+      "type": "video",
+      "poster": "media/2025%20-%20Xmas%20Tracks%20-%20Motion.poster.jpg",
+      "w": 1080,
+      "h": 1080,
+      "sound": false
+    },
+    {
+      "title": "Fluffy Clouds",
+      "year": "2024",
+      "medium": "Touchdesigner",
+      "src": "media/2024%20-%20Fluffy%20Clouds%20-%20Touchdesigner.mp4",
+      "type": "video",
+      "poster": "media/2024%20-%20Fluffy%20Clouds%20-%20Touchdesigner.poster.jpg",
+      "w": 810,
+      "h": 960,
+      "sound": false
+    },
+    {
+      "title": "Leap Motion Drawing",
+      "year": "2024",
+      "medium": "Touchdesigner",
+      "src": "media/2024%20-%20Leap%20Motion%20Drawing%20-%20Touchdesigner.mp4",
+      "type": "video",
+      "poster": "media/2024%20-%20Leap%20Motion%20Drawing%20-%20Touchdesigner.poster.jpg",
+      "w": 720,
+      "h": 1280,
+      "sound": false
+    },
+    {
+      "title": "Leap Motion Testing",
+      "year": "2024",
+      "medium": "Touchdesigner",
+      "src": "media/2024%20-%20Leap%20Motion%20Testing%20-%20Touchdesigner.mp4",
+      "type": "video",
+      "poster": "media/2024%20-%20Leap%20Motion%20Testing%20-%20Touchdesigner.poster.jpg",
+      "w": 720,
+      "h": 1280,
+      "sound": false
+    },
+    {
+      "title": "Living Room PointClouds",
+      "year": "2024",
+      "medium": "Touchdesigner",
+      "src": "media/2024%20-%20Living%20Room%20PointClouds%20-%20Touchdesigner.mp4",
+      "type": "video",
+      "poster": "media/2024%20-%20Living%20Room%20PointClouds%20-%20Touchdesigner.poster.jpg",
+      "w": 960,
+      "h": 540,
+      "sound": false
+    },
+    {
+      "title": "Fast & Furious",
+      "year": "2023",
+      "medium": "Motion",
+      "src": "media/2023%20-%20Fast%20%26%20Furious%20-%20Motion%20-%20sound.mp4",
+      "type": "video",
+      "poster": "media/2023%20-%20Fast%20%26%20Furious%20-%20Motion%20-%20sound.poster.jpg",
+      "w": 960,
+      "h": 540,
+      "sound": true
+    },
+    {
+      "title": "VOLVER",
+      "year": "2023",
+      "medium": "Motion",
+      "src": "media/2023%20-%20VOLVER%20-%20Motion%20-%20sound.mp4",
+      "type": "video",
+      "poster": "media/2023%20-%20VOLVER%20-%20Motion%20-%20sound.poster.jpg",
+      "w": 1280,
+      "h": 720,
+      "sound": true
+    },
+    {
+      "title": "Silhouette",
+      "year": "2022",
+      "medium": "Art Direction",
+      "src": "media/2022%20-%20Silhouette%20-%20Art%20Direction.png",
+      "type": "image",
+      "w": 2000,
+      "h": 1500,
+      "sound": false
+    },
+    {
+      "title": "Shearer",
+      "year": "2021",
+      "medium": "Poster",
+      "src": "media/2021%20-%20Shearer%20-%20Poster.jpg",
+      "type": "image",
+      "w": 1600,
+      "h": 2000,
+      "sound": false
+    }
+  ]
 }
