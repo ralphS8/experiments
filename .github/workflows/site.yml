@@ -1,0 +1,70 @@
+name: Build and publish Experiments
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: experiments
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ffmpeg and Pillow
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+          pip install --quiet pillow
+
+      - name: Process experiments
+        run: python3 scripts/process_experiments.py
+
+      - name: Save processed files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A add-experiments media experiments.json
+          if git diff --cached --quiet; then
+            echo "Nothing new to save"
+          else
+            git commit -m "Process experiments"
+            git pull --rebase --autostash origin main
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - name: Package site
+        run: |
+          mkdir -p _site
+          rsync -a --exclude '.git' --exclude '.github' --exclude '_site' \
+                   --exclude 'add-experiments' --exclude 'scripts' \
+                   --exclude 'cargo-embed.html' --exclude 'README.md' ./ _site/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
