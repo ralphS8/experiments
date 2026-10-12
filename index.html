@@ -82,21 +82,33 @@ button:focus-visible{outline:1px solid var(--fg);outline-offset:1px}
 #reels video{width:1px;height:1px}
 
 [hidden]{display:none!important}
+/* Loader: framed title, a hairline that fills as the pieces load, a count and a blinking tally light */
 #intro{position:fixed;inset:0;z-index:9;background:var(--bg);display:grid;place-items:center;font:400 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.ld{position:relative;display:grid;justify-items:center;gap:14px;padding:26px 34px 22px}
+.ld .c{position:absolute;width:10px;height:10px;border:1px solid var(--fg);opacity:.7}
+.ld .c1{left:0;top:0;border-right:0;border-bottom:0} .ld .c2{right:0;top:0;border-left:0;border-bottom:0}
+.ld .c3{left:0;bottom:0;border-right:0;border-top:0} .ld .c4{right:0;bottom:0;border-left:0;border-top:0}
+.ld-t{color:var(--fg)}
+.ld-bar{width:150px;height:1px;background:var(--faint);overflow:hidden}
+.ld-bar i{display:block;height:100%;width:0;background:var(--fg);transition:width .3s ease-out}
+.ld-n{display:flex;align-items:center;gap:8px;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.ld-n .tally{margin:0;animation:rec 1s steps(1) infinite}
+@keyframes rec{50%{opacity:.15}}
+.ld.msg .ld-bar,.ld.msg .ld-n{display:none}
 
 /* inside the site: the sidebar already names the page, and its edge should meet the canvas cleanly */
 .embed .tl .name{display:none}
 .embed .vignette{display:none}
 
-/* inside the site, the grain comes from the page itself so it runs unbroken across the sidebar */
-.embed .grain{display:none}
+/* the film grain stays on when embedded; add ?grain=off to the embed address to hide it */
+.nograin .grain{display:none}
 @media (max-width:640px){
   :root{--pad:16px}
   .bl{display:none}
   .bc{left:var(--pad);transform:none}
   .lens{font-size:18px}
 }
-@media (prefers-reduced-motion:reduce){.grain{animation:none}#vf .c{transition:none}}
+@media (prefers-reduced-motion:reduce){.grain{animation:none}#vf .c{transition:none}.ld-n .tally{animation:none}.ld-bar i{transition:none}}
 </style>
 
 </head>
@@ -129,7 +141,14 @@ button:focus-visible{outline:1px solid var(--fg);outline-offset:1px}
   <button id="overview">Overview · 24mm</button>
 </div>
 
-<div id="intro">Experiments</div>
+<div id="intro" role="status" aria-live="polite">
+  <div class="ld" id="ld">
+    <i class="c c1"></i><i class="c c2"></i><i class="c c3"></i><i class="c c4"></i>
+    <div class="ld-t" id="ldT">Experiments</div>
+    <div class="ld-bar"><i id="ldFill"></i></div>
+    <div class="ld-n"><span class="tally"></span><span id="ldN">Loading</span></div>
+  </div>
+</div>
 <div id="reels" aria-hidden="true"></div>
 
 <script>
@@ -140,6 +159,7 @@ try{ if (window.self !== window.top) document.documentElement.classList.add('emb
    screens and top on narrow ones (where the sidebar sits above the page). */
 const params = new URLSearchParams(location.search);
 const EMBED = document.documentElement.classList.contains('embed');
+if (params.get('grain') === 'off') document.documentElement.classList.add('nograin');
 let edgeSide = null, edgeAuto = !params.has('edge');
 const setEdge = side => { edgeSide = (side === 'left' || side === 'top') ? side : null; };
 const autoEdge = () => { if (edgeAuto) setEdge(EMBED ? (innerWidth < 640 ? 'top' : 'left') : null); };
@@ -209,8 +229,8 @@ function makeItem(p){
   const it = { ...p, f:0, img:null, gray:null, vid:null, ar: (p.w && p.h) ? p.w / p.h : 1.5, ready:false };
   const im = new Image();
   im.decoding = 'async';
-  im.onload = () => { it.img = toCanvas(im); it.gray = grayOf(it.img); it.ready = true; };
-  im.onerror = () => { it.failed = true; };
+  im.onload = () => { it.img = toCanvas(im); it.gray = grayOf(it.img); it.ready = true; loadedOne(); };
+  im.onerror = () => { it.failed = true; loadedOne(); };
   im.src = p.type === 'video' ? p.poster : p.src;
   return it;
 }
@@ -602,12 +622,27 @@ const used = () => setTimeout(() => document.documentElement.classList.add('used
 if (coarse) $('hint').textContent = 'Drag to pan · Pinch to zoom · Tap to cut';
 
 /* ---------- start: hold on black, then a hard cut in ---------- */
-function message(text){ const el = $('intro'); el.hidden = false; el.textContent = text; }
+function message(text){ $('intro').hidden = false; $('ld').classList.add('msg'); $('ldT').textContent = text; }
+
+/* loader: counts the still frames in, then cuts to the canvas (or after 6 seconds, whatever has loaded) */
+let loaded = 0, total = 0, cut = false, shownAt = performance.now();
+function showProgress(){
+  $('ldFill').style.width = (total ? loaded / total * 100 : 0) + '%';
+  $('ldN').textContent = pad(loaded) + ' / ' + pad(total);
+}
+function loadedOne(){ loaded++; showProgress(); if (loaded >= total) cutIn(); }
+function cutIn(){
+  if (cut) return; cut = true;
+  // hold the full bar for a beat, and never flash the loader for less than half a second
+  const wait = reduce ? 0 : Math.max(250, 600 - (performance.now() - shownAt));
+  setTimeout(() => { $('intro').hidden = true; }, wait);
+}
 fetch(LIST_URL, { cache: 'no-cache' })
   .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
   .then(data => {
     const pieces = (data.pieces || []).filter(p => p && p.src && p.w && p.h);
     if (!pieces.length){ message('No experiments yet'); return; }
+    total = pieces.length; showProgress();
     pieces.forEach(p => items.push(makeItem(p)));
     layout();
     $('total').textContent = '[' + pad(items.length) + '] pieces';
@@ -618,7 +653,7 @@ fetch(LIST_URL, { cache: 'no-cache' })
     cam.x = first.cx; cam.y = first.cy; cam.s = clamp(Math.max(minS * 1.9, fitScale(first) * .5), minS, maxS);
     prev.x = cam.x; prev.y = cam.y; prev.s = cam.s;
     requestAnimationFrame(frame);
-    setTimeout(() => { $('intro').hidden = true; }, reduce ? 100 : 700);
+    setTimeout(cutIn, 6000);
   })
   .catch(() => message('The experiments could not be loaded'));
 })();
