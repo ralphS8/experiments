@@ -82,12 +82,9 @@ button:focus-visible{outline:1px solid var(--fg);outline-offset:1px}
 #reels video{width:1px;height:1px}
 
 [hidden]{display:none!important}
-/* Loader: framed title, a hairline that fills as the pieces load, a count and a blinking tally light */
+/* Loader: title, a hairline that fills as the pieces load, a count and a blinking tally light */
 #intro{position:fixed;inset:0;z-index:9;background:var(--bg);display:grid;place-items:center;font:400 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
 .ld{position:relative;display:grid;justify-items:center;gap:14px;padding:26px 34px 22px}
-.ld .c{position:absolute;width:10px;height:10px;border:1px solid var(--fg);opacity:.7}
-.ld .c1{left:0;top:0;border-right:0;border-bottom:0} .ld .c2{right:0;top:0;border-left:0;border-bottom:0}
-.ld .c3{left:0;bottom:0;border-right:0;border-top:0} .ld .c4{right:0;bottom:0;border-left:0;border-top:0}
 .ld-t{color:var(--fg)}
 .ld-bar{width:150px;height:1px;background:var(--faint);overflow:hidden}
 .ld-bar i{display:block;height:100%;width:0;background:var(--fg);transition:width .3s ease-out}
@@ -143,7 +140,6 @@ button:focus-visible{outline:1px solid var(--fg);outline-offset:1px}
 
 <div id="intro" role="status" aria-live="polite">
   <div class="ld" id="ld">
-    <i class="c c1"></i><i class="c c2"></i><i class="c c3"></i><i class="c c4"></i>
     <div class="ld-t" id="ldT">Experiments</div>
     <div class="ld-bar"><i id="ldFill"></i></div>
     <div class="ld-n"><span class="tally"></span><span id="ldN">Loading</span></div>
@@ -375,8 +371,8 @@ function frame(now){
     const d = Math.hypot(sx, sy);
     if (d < bestD){ bestD = d; best = it; bestRect = { x, y, w, h }; }
   });
-  focused = best;
-  frameBrackets(bestRect);
+  focused = armed ? best : null;
+  frameBrackets(armed ? bestRect : null);
 
   // draw
   const label = cam.s * 300 > 70;
@@ -618,6 +614,10 @@ $('overview').addEventListener('click', overview);
 addEventListener('resize', () => { resize(); autoEdge(); });
 
 const used = () => setTimeout(() => document.documentElement.classList.add('used'), 1500);
+// the page opens fully zoomed out with an empty viewfinder; focusing starts with the first interaction
+let armed = false;
+const arm = () => { armed = true; };
+['pointerdown', 'wheel', 'keydown'].forEach(t => addEventListener(t, arm, { once: true, passive: true }));
 ['pointerdown', 'wheel', 'keydown'].forEach(t => addEventListener(t, used, { once: true, passive: true }));
 if (coarse) $('hint').textContent = 'Drag to pan · Pinch to zoom · Tap to cut';
 
@@ -648,9 +648,8 @@ fetch(LIST_URL, { cache: 'no-cache' })
     $('total').textContent = '[' + pad(items.length) + '] pieces';
     $('count').textContent = '00 / ' + pad(items.length);
     resize();
-    // open at a mid focal length, framed on a random piece
-    const first = items[Math.floor(rnd() * items.length)];
-    cam.x = first.cx; cam.y = first.cy; cam.s = clamp(Math.max(minS * 1.9, fitScale(first) * .5), minS, maxS);
+    // open fully zoomed out on the whole sheet
+    cam.x = TILE_W / 2; cam.y = TILE_H / 2; cam.s = minS;
     prev.x = cam.x; prev.y = cam.y; prev.s = cam.s;
     requestAnimationFrame(frame);
     setTimeout(cutIn, 6000);
