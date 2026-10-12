@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-12T21:54:36Z",
+  "updated": "2026-10-12T22:03:46Z",
   "pieces": [
     {
       "title": "Embracing Power",
@@ -27,12 +27,12 @@
       "title": "305",
       "year": "2025",
       "medium": "Motion",
-      "src": "media/2025%20-%20305%20-%20Motion%20-%20sound.mp4",
+      "src": "media/2025%20-%20305%20-%20Motion.mp4",
       "type": "video",
-      "poster": "media/2025%20-%20305%20-%20Motion%20-%20sound.poster.jpg",
+      "poster": "media/2025%20-%20305%20-%20Motion.poster.jpg",
       "w": 1280,
       "h": 960,
-      "sound": true
+      "sound": false
     },
     {
       "title": "Arbol de Manzanilla",
