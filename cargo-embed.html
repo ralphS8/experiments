@@ -1,0 +1,41 @@
+<!--
+  Paste this whole block into the Experiments page in Cargo, using the page editor's code (HTML) view.
+  Replace YOUR-USERNAME with your GitHub username. If you named the repository something other than
+  "experiments", change that part of the address too.
+
+  What it does
+  - shows the Experiments canvas in the page area
+  - while this page is open: turns the background and sidebar text dark and adds the film grain
+    across the whole screen (the canvas turns its own grain off when it is embedded, so there is one
+    unbroken layer)
+
+  Check after pasting: open Experiments, then click Work. The site should return to its light look.
+  If the dark styling stays on after leaving the page, tell Claude which Cargo template you use and
+  this can be scoped differently.
+-->
+<iframe
+  class="rs-experiments"
+  src="https://YOUR-USERNAME.github.io/experiments/"
+  title="Experiments"
+  allow="autoplay; fullscreen"
+  loading="eager"></iframe>
+
+<style>
+  /* the canvas fills the page area */
+  .rs-experiments{
+    display:block; width:100%; height:100vh; height:100dvh; border:0; background:#0a0a0b;
+  }
+
+  /* dark site while Experiments is open */
+  html, body{ background:#0a0a0b !important; }
+  body, body a, body a:visited{ color:#ebe9e3 !important; }
+
+  /* film grain over the whole screen, sidebar included */
+  body::after{
+    content:""; position:fixed; inset:-50%; z-index:2147483647; pointer-events:none; opacity:.07;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:rs-grain .5s steps(3) infinite;
+  }
+  @keyframes rs-grain{0%{transform:translate(0,0)}33%{transform:translate(-3%,2%)}66%{transform:translate(2%,-3%)}100%{transform:translate(0,0)}}
+  @media (prefers-reduced-motion:reduce){ body::after{ animation:none; } }
+</style>
