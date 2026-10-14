@@ -188,7 +188,8 @@ function layout(){
   ROWS = Math.max(2, Math.ceil(items.length / COLS));
   TILE_W = COLS * CELL_W; TILE_H = ROWS * CELL_H;
   // shuffle which piece sits in which cell, so each visit starts with a different arrangement
-  const order = items.map((p,i)=>i).sort(()=>rnd()-.5);
+  const order = items.map((p,i)=>i);
+  for (let i = order.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
   order.forEach((pi, cell) => {
     const it = items[pi];
     const col = cell % COLS, row = Math.floor(cell / COLS);
@@ -228,7 +229,8 @@ function makeItem(p){
   im.decoding = 'async';
   im.onload = () => { it.img = toCanvas(im); it.gray = grayOf(it.img); it.ready = true; loadedOne(); };
   im.onerror = () => { it.failed = true; loadedOne(); };
-  im.src = p.type === 'video' ? p.poster : p.src;
+  // the small preview loads first; a still's full-size image is fetched only when it comes into focus
+  im.src = p.thumb || (p.type === 'video' ? p.poster : p.src);
   return it;
 }
 
@@ -259,6 +261,13 @@ function playVideo(it){
     // if the browser refuses sound, fall back to playing muted
     if (p && p.catch) p.catch(() => { v.muted = true; v.play().catch(() => {}); });
   }
+}
+function loadFull(it){
+  if (it.full || it.fullLoading || !it.thumb) return;
+  it.fullLoading = true;
+  const im = new Image(); im.decoding = 'async';
+  im.onload = () => { it.full = im; };
+  im.src = it.src;
 }
 function stopVideo(it){ if (it.vid){ it.vid.muted = true; if (!it.vid.paused) it.vid.pause(); } }
 
@@ -385,7 +394,7 @@ function frame(now){
     ctx.drawImage(it.gray, x, y, w, h);
     if (it.f > .01){
       const v = it.vid, moving = v && v.readyState >= 2 && v.videoWidth;
-      ctx.globalAlpha = it.f; ctx.drawImage(moving ? v : it.img, x, y, w, h);
+      ctx.globalAlpha = it.f; ctx.drawImage(moving ? v : (it.full || it.img), x, y, w, h);
     }
     if (label){
       ctx.globalAlpha = .45 * (1 - it.f);
@@ -401,6 +410,7 @@ function frame(now){
   for (const it of items){
     it.f += ((it === focused ? 1 : 0) - it.f) * .14;
     if (it.type === 'video'){ if (it === focused) playVideo(it); else stopVideo(it); }
+    else if (it === focused && it.f > .5) loadFull(it);
   }
 
   if (focused !== lastFocused) onFocusChange();
@@ -627,7 +637,7 @@ if (coarse) $('hint').textContent = 'Drag to pan · Pinch to zoom · Tap to cut'
 /* ---------- start: hold on black, then a hard cut in ---------- */
 function message(text){ $('intro').hidden = false; $('ld').classList.add('msg'); $('ldT').textContent = text; }
 
-/* loader: counts the still frames in, then cuts to the canvas (or after 6 seconds, whatever has loaded) */
+/* loader: counts the previews in, then cuts to the canvas (or after 3.5 seconds, whatever has loaded) */
 let loaded = 0, total = 0, cut = false, shownAt = performance.now();
 function showProgress(){
   $('ldFill').style.width = (total ? loaded / total * 100 : 0) + '%';
@@ -655,7 +665,7 @@ fetch(LIST_URL, { cache: 'no-cache' })
     cam.x = TILE_W / 2; cam.y = TILE_H / 2; cam.s = minS;
     prev.x = cam.x; prev.y = cam.y; prev.s = cam.s;
     requestAnimationFrame(frame);
-    setTimeout(cutIn, 6000);
+    setTimeout(cutIn, 3500);
   })
   .catch(() => message('The experiments could not be loaded'));
 })();

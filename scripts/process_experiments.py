@@ -35,11 +35,13 @@ LIST = ROOT / "experiments.json"
 VIDEO_EXT = {".mp4", ".mov", ".m4v", ".webm", ".mkv", ".avi"}
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".tif", ".tiff", ".bmp"}
 POSTER = ".poster.jpg"
+THUMB = ".thumb"            # small preview the page loads first: name.thumb.jpg (or .png if transparent)
 KEEP = {".gitkeep", "readme.md", ".ds_store"}
 
 VIDEO_LONG_EDGE = 1280      # px
 VIDEO_MAX_MB = 12           # re-encode smaller if a video comes out bigger than this
 IMAGE_LONG_EDGE = 2000      # px
+THUMB_LONG_EDGE = 800       # px, enough for the canvas until a piece is in focus
 
 
 # ---------- names ----------
@@ -172,8 +174,7 @@ def process_inbox():
                 make_poster(dst, dst.with_name(dst.stem + POSTER))
             elif ext in IMAGE_EXT:
                 for old in MEDIA.glob(f"{glob_escape(stem)}.*"):
-                    if not old.name.endswith(POSTER):
-                        old.unlink()
+                    old.unlink()   # its preview is remade below
                 dst = encode_image(src, MEDIA / stem)
             else:
                 print(f"skipped  {src.name}  (not a video or image)")
@@ -194,42 +195,75 @@ def glob_escape(s):
     return re.sub(r"([\[\]\*\?])", r"[\1]", s)
 
 
+def is_derived(name):
+    """Still frames and previews made by this script, not pieces themselves."""
+    return name.endswith(POSTER) or (THUMB + ".") in name
+
+
+def make_thumb(src_image, stem_path):
+    """Small preview so the page loads quickly; transparent images stay transparent."""
+    with Image.open(src_image) as im:
+        im = ImageOps.exif_transpose(im)
+        im.thumbnail((THUMB_LONG_EDGE, THUMB_LONG_EDGE), Image.LANCZOS)
+        transparent = im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info)
+        if transparent:
+            out = stem_path.with_name(stem_path.name + THUMB + ".png")
+            im.convert("RGBA").save(out, optimize=True)
+        else:
+            out = stem_path.with_name(stem_path.name + THUMB + ".jpg")
+            im.convert("RGB").save(out, quality=78, optimize=True, progressive=True)
+    return out
+
+
+def find_thumb(stem_path):
+    for ext in (".jpg", ".png"):
+        t = stem_path.with_name(stem_path.name + THUMB + ext)
+        if t.exists():
+            return t
+    return None
+
+
 def build_list():
     """Rebuild experiments.json from whatever is in media/."""
     MEDIA.mkdir(parents=True, exist_ok=True)
-    pieces, posters_needed = [], set()
+    pieces, needed = [], set()
     for f in sorted(MEDIA.iterdir()):
-        if f.name.endswith(POSTER) or f.name.startswith(".") or f.is_dir():
+        if is_derived(f.name) or f.name.startswith(".") or f.is_dir():
             continue
         ext = f.suffix.lower()
         year, title, medium, sound = split_name(f.stem)
         piece = {"title": title, "year": year, "medium": medium,
                  "src": "media/" + quote(f.name)}
+        stem_path = f.with_name(f.stem)
         try:
             if ext in VIDEO_EXT:
                 poster = f.with_name(f.stem + POSTER)
                 if not poster.exists():
                     make_poster(f, poster)
-                posters_needed.add(poster.name)
+                thumb = find_thumb(stem_path) or make_thumb(poster, stem_path)
+                needed.update({poster.name, thumb.name})
                 w, h = displayed_size(f)
                 _, _, _, has_audio = probe(f)
                 piece.update(type="video", poster="media/" + quote(poster.name),
+                             thumb="media/" + quote(thumb.name),
                              w=w, h=h, sound=bool(sound and has_audio))
             elif ext in IMAGE_EXT:
+                thumb = find_thumb(stem_path) or make_thumb(f, stem_path)
+                needed.add(thumb.name)
                 with Image.open(f) as im:
                     w, h = ImageOps.exif_transpose(im).size
-                piece.update(type="image", w=w, h=h, sound=False)
+                piece.update(type="image", thumb="media/" + quote(thumb.name), w=w, h=h, sound=False)
             else:
                 continue
         except Exception as e:
             print(f"::warning::Could not read {f.name}: {str(e).splitlines()[0] if str(e) else e}")
             continue
         pieces.append(piece)
-    # still frames whose video was deleted or renamed
-    for p in MEDIA.glob("*" + POSTER):
-        if p.name not in posters_needed:
-            p.unlink()
-            print(f"removed  {p.name}  (its video is gone)")
+    # still frames and previews whose piece was deleted or renamed
+    for d in MEDIA.iterdir():
+        if is_derived(d.name) and d.name not in needed:
+            d.unlink()
+            print(f"removed  {d.name}  (its piece is gone)")
     pieces.sort(key=lambda p: (-(int(p["year"]) if p["year"] else 0), p["title"].lower()))
     LIST.write_text(json.dumps({
         "updated": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
