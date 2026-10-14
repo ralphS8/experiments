@@ -99,11 +99,12 @@ button:focus-visible{outline:1px solid var(--fg);outline-offset:1px}
 
 /* the film grain stays on when embedded; add ?grain=off to the embed address to hide it */
 .nograin .grain{display:none}
+/* Phones: no readouts, so the site's own header and icons sit over the images; captions trimmed to fit small frames */
 @media (max-width:640px){
-  :root{--pad:16px}
-  .bl{display:none}
-  .bc{left:var(--pad);transform:none}
-  .lens{font-size:18px}
+  .hud{display:none}
+  #vf .cap.b.r .tally, #vf .cap.b.r .ftxt{display:none}
+  #snd{margin-right:-6px}
+  #vf .c{width:12px;height:12px}
 }
 @media (prefers-reduced-motion:reduce){.grain{animation:none}#vf .c{transition:none}.ld-n .tally{animation:none}.ld-bar i{transition:none}}
 </style>
@@ -274,8 +275,8 @@ function resize(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   minS = Math.min(VW / TILE_W, VH / TILE_H) * .94;
   maxS = Math.max(minS * 5, Math.min(VW, VH) / 260);
-  vfW = VW < 640 ? VW * .72 : clamp(VW * .34, 320, 520);
-  vfH = vfW * (2/3);
+  vfW = VW < 640 ? VW * .46 : clamp(VW * .34, 320, 520);
+  vfH = vfW * (VW < 640 ? .8 : 2/3);
   if (vfH > VH * .5){ vfH = VH * .5; vfW = vfH * 1.5; }
   document.documentElement.style.setProperty('--vfw', vfW + 'px');
   document.documentElement.style.setProperty('--vfh', vfH + 'px');
@@ -300,7 +301,7 @@ function whip(tx, ty, ts, label, dur){
 
 /* nearest copy of an item to the camera (the canvas repeats forever) */
 const nearest = it => ({ x: cam.x + wrap(it.cx - cam.x, TILE_W), y: cam.y + wrap(it.cy - cam.y, TILE_H) });
-const fitScale = it => Math.min((VW - (VW < 640 ? 48 : 160)) * .82 / it.w, (VH - 150) * .86 / it.h);
+const fitScale = it => Math.min((VW - (VW < 640 ? 48 : 160)) * .82 / it.w, (VH - (VW < 640 ? 260 : 150)) * .86 / it.h);
 
 function cutTo(it){ const p = nearest(it); whip(p.x, p.y, fitScale(it), 'Whip pan'); }
 function step(dir){
@@ -462,8 +463,10 @@ function frameBrackets(r){
   let tx, ty, tw, th;
   if (r){
     // safe area keeps the captions clear of the corner readouts when a piece fills the screen
-    const p = 12, mx = VW < 640 ? 16 : 28, top = VW < 640 ? 64 : 112, bot = VW < 640 ? 84 : 104;
-    const minW = Math.min(VW - mx * 2, focused && focused.sound ? 290 : 240), minH = 90;
+    // phones keep clear of the site's header (top) and icons (bottom), and let the frame hug even small pieces
+    const nar = VW < 640, snd = focused && focused.sound;
+    const p = nar ? 8 : 12, mx = nar ? 12 : 28, top = nar ? 120 : 112, bot = nar ? 110 : 104;
+    const minW = Math.min(VW - mx * 2, nar ? (snd ? 190 : 60) : (snd ? 290 : 240)), minH = nar ? 44 : 90;
     let x0 = Math.max(mx, r.x - p), y0 = Math.max(top, r.y - p);
     let x1 = Math.min(VW - mx, r.x + r.w + p), y1 = Math.min(VH - bot, r.y + r.h + p);
     // small pieces get a frame at least wide enough for the captions, centred on the piece
