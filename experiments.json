@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-14T11:06:10Z",
+  "updated": "2026-10-14T11:15:13Z",
   "pieces": [
     {
       "title": "Embracing Power",
@@ -8,6 +8,7 @@
       "src": "media/2026%20-%20Embracing%20Power%20-%20Title%20Treatment.mp4",
       "type": "video",
       "poster": "media/2026%20-%20Embracing%20Power%20-%20Title%20Treatment.poster.jpg",
+      "thumb": "media/2026%20-%20Embracing%20Power%20-%20Title%20Treatment.thumb.jpg",
       "w": 848,
       "h": 480,
       "sound": false
@@ -19,6 +20,7 @@
       "src": "media/2026%20-%20Line%20Noise%20-%20Cavalry.mp4",
       "type": "video",
       "poster": "media/2026%20-%20Line%20Noise%20-%20Cavalry.poster.jpg",
+      "thumb": "media/2026%20-%20Line%20Noise%20-%20Cavalry.thumb.jpg",
       "w": 1080,
       "h": 1080,
       "sound": false
@@ -30,6 +32,7 @@
       "src": "media/2025%20-%20305%20-%20Motion.mp4",
       "type": "video",
       "poster": "media/2025%20-%20305%20-%20Motion.poster.jpg",
+      "thumb": "media/2025%20-%20305%20-%20Motion.thumb.jpg",
       "w": 1280,
       "h": 960,
       "sound": false
@@ -41,6 +44,7 @@
       "src": "media/2025%20-%20Arbol%20de%20Manzanilla%20-%20Motion_Illustration.mp4",
       "type": "video",
       "poster": "media/2025%20-%20Arbol%20de%20Manzanilla%20-%20Motion_Illustration.poster.jpg",
+      "thumb": "media/2025%20-%20Arbol%20de%20Manzanilla%20-%20Motion_Illustration.thumb.jpg",
       "w": 720,
       "h": 1280,
       "sound": false
@@ -51,6 +55,7 @@
       "medium": "Illustration",
       "src": "media/2025%20-%20BlueJ%20-%20Illustration.png",
       "type": "image",
+      "thumb": "media/2025%20-%20BlueJ%20-%20Illustration.thumb.png",
       "w": 1080,
       "h": 1350,
       "sound": false
@@ -62,6 +67,7 @@
       "src": "media/2025%20-%20Boxing%20Day%20Exp%20-%20Motion.mp4",
       "type": "video",
       "poster": "media/2025%20-%20Boxing%20Day%20Exp%20-%20Motion.poster.jpg",
+      "thumb": "media/2025%20-%20Boxing%20Day%20Exp%20-%20Motion.thumb.jpg",
       "w": 1080,
       "h": 1080,
       "sound": false
@@ -73,6 +79,7 @@
       "src": "media/2025%20-%20Particle%20Murmurations%20-%20Houdini.mp4",
       "type": "video",
       "poster": "media/2025%20-%20Particle%20Murmurations%20-%20Houdini.poster.jpg",
+      "thumb": "media/2025%20-%20Particle%20Murmurations%20-%20Houdini.thumb.jpg",
       "w": 1080,
       "h": 1080,
       "sound": false
@@ -84,6 +91,7 @@
       "src": "media/2025%20-%20Sand%20Wave%20-%20Houdini.mp4",
       "type": "video",
       "poster": "media/2025%20-%20Sand%20Wave%20-%20Houdini.poster.jpg",
+      "thumb": "media/2025%20-%20Sand%20Wave%20-%20Houdini.thumb.jpg",
       "w": 1024,
       "h": 1280,
       "sound": false
@@ -95,6 +103,7 @@
       "src": "media/2025%20-%20Xmas%20Tracks%20-%20Motion.mp4",
       "type": "video",
       "poster": "media/2025%20-%20Xmas%20Tracks%20-%20Motion.poster.jpg",
+      "thumb": "media/2025%20-%20Xmas%20Tracks%20-%20Motion.thumb.jpg",
       "w": 1080,
       "h": 1080,
       "sound": false
@@ -106,6 +115,7 @@
       "src": "media/2024%20-%20Fluffy%20Clouds%20-%20Touchdesigner.mp4",
       "type": "video",
       "poster": "media/2024%20-%20Fluffy%20Clouds%20-%20Touchdesigner.poster.jpg",
+      "thumb": "media/2024%20-%20Fluffy%20Clouds%20-%20Touchdesigner.thumb.jpg",
       "w": 810,
       "h": 960,
       "sound": false
@@ -117,6 +127,7 @@
       "src": "media/2024%20-%20Leap%20Motion%20Drawing%20-%20Touchdesigner.mp4",
       "type": "video",
       "poster": "media/2024%20-%20Leap%20Motion%20Drawing%20-%20Touchdesigner.poster.jpg",
+      "thumb": "media/2024%20-%20Leap%20Motion%20Drawing%20-%20Touchdesigner.thumb.jpg",
       "w": 720,
       "h": 1280,
       "sound": false
@@ -128,6 +139,7 @@
       "src": "media/2024%20-%20Leap%20Motion%20Testing%20-%20Touchdesigner.mp4",
       "type": "video",
       "poster": "media/2024%20-%20Leap%20Motion%20Testing%20-%20Touchdesigner.poster.jpg",
+      "thumb": "media/2024%20-%20Leap%20Motion%20Testing%20-%20Touchdesigner.thumb.jpg",
       "w": 720,
       "h": 1280,
       "sound": false
@@ -139,6 +151,7 @@
       "src": "media/2024%20-%20Living%20Room%20PointClouds%20-%20Touchdesigner.mp4",
       "type": "video",
       "poster": "media/2024%20-%20Living%20Room%20PointClouds%20-%20Touchdesigner.poster.jpg",
+      "thumb": "media/2024%20-%20Living%20Room%20PointClouds%20-%20Touchdesigner.thumb.jpg",
       "w": 960,
       "h": 540,
       "sound": false
@@ -150,6 +163,7 @@
       "src": "media/2023%20-%20Fast%20%26%20Furious%20-%20Motion%20-%20sound.mp4",
       "type": "video",
       "poster": "media/2023%20-%20Fast%20%26%20Furious%20-%20Motion%20-%20sound.poster.jpg",
+      "thumb": "media/2023%20-%20Fast%20%26%20Furious%20-%20Motion%20-%20sound.thumb.jpg",
       "w": 960,
       "h": 540,
       "sound": true
@@ -161,6 +175,7 @@
       "src": "media/2023%20-%20VOLVER%20-%20Motion%20-%20sound.mp4",
       "type": "video",
       "poster": "media/2023%20-%20VOLVER%20-%20Motion%20-%20sound.poster.jpg",
+      "thumb": "media/2023%20-%20VOLVER%20-%20Motion%20-%20sound.thumb.jpg",
       "w": 1280,
       "h": 720,
       "sound": true
@@ -171,6 +186,7 @@
       "medium": "Art Direction",
       "src": "media/2022%20-%20Silhouette%20-%20Art%20Direction.png",
       "type": "image",
+      "thumb": "media/2022%20-%20Silhouette%20-%20Art%20Direction.thumb.png",
       "w": 2000,
       "h": 1500,
       "sound": false
@@ -181,6 +197,7 @@
       "medium": "Poster",
       "src": "media/2021%20-%20Shearer%20-%20Poster.jpg",
       "type": "image",
+      "thumb": "media/2021%20-%20Shearer%20-%20Poster.thumb.jpg",
       "w": 1600,
       "h": 2000,
       "sound": false
