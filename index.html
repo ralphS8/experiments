@@ -1,499 +1,665 @@
 <!doctype html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Hidden index</title>
-<link rel="preload" href="fonts/inter-regular.woff2" as="font" type="font/woff2" crossorigin>
+<title>Experiments · Ralph Sagrott</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&display=swap">
 <style>
-/* Inter (SIL Open Font License), hosted alongside this page */
-@font-face{
-  font-family:"Inter";
-  src:url("fonts/inter-regular.woff2") format("woff2");
-  font-weight:400;font-style:normal;font-display:swap;
-}
+/* Layout: one endless, looping dark field you pan and zoom like a camera; a fixed viewfinder in the centre, camera readouts pinned to the four corners. */
 :root{
-  --paper:#FCFCFC; --ink:#252525; --muted:#8c8c8c;
-  --font:"Inter","Helvetica Neue",Helvetica,Arial,sans-serif;
-  box-sizing:border-box;
-  padding-top:env(safe-area-inset-top,0px);
-  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme: dark;
+  --bg:#0a0a0b;          /* stage black, very slightly warm */
+  --fg:#ebe9e3;          /* readout white, paper-tinted */
+  --dim:rgba(235,233,227,.5);
+  --faint:rgba(235,233,227,.18);
+  --rec:#e5483b;         /* tally light, used only for the focus dot */
+  --sans:"ABC Diatype","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --mono:"ABC Diatype Mono","Geist Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --pad:20px;
+  --vfw:440px; --vfh:290px;
 }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){ --paper:#161616; --ink:#ebebeb; --muted:#7a7a7a; }
-}
-:root[data-theme="dark"]{ --paper:#161616; --ink:#ebebeb; --muted:#7a7a7a; }
-*,*::before,*::after{box-sizing:inherit}
-html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);background:var(--paper)}
-body{
-  height:100%;margin:0;background:var(--paper);color:var(--ink);
-  font-family:var(--font);
-  -webkit-font-smoothing:antialiased;overflow:hidden;
-}
-.page{position:relative;height:100%}
-.page.embed .side{display:none}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--fg);overscroll-behavior:none}
+body{font:13px/1.35 var(--sans);-webkit-font-smoothing:antialiased;touch-action:none;user-select:none;-webkit-user-select:none}
+#stage{position:fixed;inset:0;width:100%;height:100%;display:block;cursor:grab}
+#stage.dragging{cursor:grabbing}
+#stage.hovering{cursor:pointer}
 
-/* Mock of the existing Cargo sidebar, for context only */
-.side{position:absolute;left:0;top:0;bottom:0;z-index:2;width:20%;min-width:260px;pointer-events:none;display:flex;flex-direction:column;padding:30px 30px 30px 30px;font-size:15px;line-height:1.38;letter-spacing:-.005em}
-.wm{display:flex;flex-direction:column;font-weight:400;font-size:62px;line-height:.86;letter-spacing:-.045em}
-.wm .l2{padding-left:.3em}
-.bio{max-width:19em;margin:16px 0 0}
-.side .nav{margin-top:auto;display:flex;flex-direction:column}
-.side .contact{margin-top:auto;display:flex;flex-direction:column}
+.grain{position:fixed;inset:-50%;pointer-events:none;z-index:10;opacity:.07;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain .5s steps(3) infinite}
+@keyframes grain{0%{transform:translate(0,0)}33%{transform:translate(-3%,2%)}66%{transform:translate(2%,-3%)}100%{transform:translate(0,0)}}
+.vignette{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.55) 100%)}
 
-.field{position:relative;height:100%;overflow:hidden;cursor:crosshair;touch-action:manipulation;min-height:0}
-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:fixed;z-index:3;font:400 11px/1.5 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--dim);font-variant-numeric:tabular-nums;pointer-events:none}
+.hud b{font-weight:400;color:var(--fg)}
+.tl{top:calc(var(--pad) + env(safe-area-inset-top,0px));left:var(--pad)}
+.tl .name{font:500 14px/1.2 var(--sans);letter-spacing:0;text-transform:none;color:var(--fg)}
+.tr{top:calc(var(--pad) + env(safe-area-inset-top,0px));right:var(--pad);text-align:right;display:grid;gap:2px}
+.bl{bottom:calc(var(--pad) + env(safe-area-inset-bottom,0px));left:var(--pad)}
+.br{bottom:calc(var(--pad) + env(safe-area-inset-bottom,0px));right:var(--pad);display:grid;justify-items:end;gap:8px;pointer-events:auto}
+.bc{bottom:calc(var(--pad) + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:4px;pointer-events:auto}
+.lens{font-size:22px;line-height:1;color:var(--fg);letter-spacing:0}
+.lens small{font-size:11px;color:var(--dim);margin-left:2px}
+.move{color:var(--fg)}
+button{font:inherit;letter-spacing:inherit;text-transform:inherit;color:var(--dim);background:none;border:0;padding:6px 8px;cursor:pointer;border-radius:2px}
+button:hover{color:var(--fg)}
+button:focus-visible{outline:1px solid var(--fg);outline-offset:1px}
+#count{color:var(--fg);min-width:7ch;text-align:center}
 
-.card{
-  position:absolute;display:block;transform:translate(-50%,-50%);
-  pointer-events:none;color:inherit;text-decoration:none;outline:none;
-  --ph:0;--pv:0;--pc:0;--bw:1px;
-}
-.card.live{pointer-events:auto;cursor:pointer}
-.card.off .clip{visibility:hidden}
-.clip{
-  position:absolute;inset:0;overflow:hidden;background:var(--ink);
-  clip-path:inset(calc((1 - var(--pv)) * (50% - .5px)) calc((1 - var(--ph)) * (50% - .5px)));
-}
-.clip img{width:100%;height:100%;object-fit:cover;display:block;opacity:calc(var(--pv) * 1.3)}
-.c{position:absolute;width:9px;height:9px;border:0 solid var(--ink);opacity:var(--ph)}
-.c.tl{left:calc((1 - var(--ph)) * (50% - .5px) - 7px);top:calc((1 - var(--pv)) * (50% - .5px) - 7px);border-left-width:var(--bw);border-top-width:var(--bw)}
-.c.tr{right:calc((1 - var(--ph)) * (50% - .5px) - 7px);top:calc((1 - var(--pv)) * (50% - .5px) - 7px);border-right-width:var(--bw);border-top-width:var(--bw)}
-.c.bl{left:calc((1 - var(--ph)) * (50% - .5px) - 7px);bottom:calc((1 - var(--pv)) * (50% - .5px) - 7px);border-left-width:var(--bw);border-bottom-width:var(--bw)}
-.c.bb{right:calc((1 - var(--ph)) * (50% - .5px) - 7px);bottom:calc((1 - var(--pv)) * (50% - .5px) - 7px);border-right-width:var(--bw);border-bottom-width:var(--bw)}
-.card:focus-visible{--bw:2px}
-.cap{
-  position:absolute;left:-1px;top:calc(100% + 13px);
-  font-size:12.5px;line-height:1.32;white-space:nowrap;letter-spacing:-.003em;
-  opacity:var(--pc);background:var(--paper);padding:1px 6px 2px 1px;
-  transform:translateY(calc((1 - var(--pc)) * 3px));
-}
-.card.above .cap{top:auto;bottom:calc(100% + 13px)}
-.idx{color:var(--muted);font-variant-numeric:tabular-nums;margin-right:.45em}
-.tag{display:block;color:var(--muted)}
+/* Viewfinder */
+/* the brackets glide to frame whichever piece is in focus; with nothing in focus they rest as a centred viewfinder */
+#vf{position:fixed;z-index:2;left:0;top:0;width:var(--vfw);height:var(--vfh);pointer-events:none;will-change:transform}
+#vf .c{position:absolute;width:18px;height:18px;border:1px solid var(--fg);opacity:.85;transition:transform .25s cubic-bezier(.2,.8,.2,1)}
+#vf .c1{left:0;top:0;border-right:0;border-bottom:0}
+#vf .c2{right:0;top:0;border-left:0;border-bottom:0}
+#vf .c3{left:0;bottom:0;border-right:0;border-top:0}
+#vf .c4{right:0;bottom:0;border-left:0;border-top:0}
+#vf.af .c1{transform:translate(10px,10px)} #vf.af .c2{transform:translate(-10px,10px)}
+#vf.af .c3{transform:translate(10px,-10px)} #vf.af .c4{transform:translate(-10px,-10px)}
+#cross{position:fixed;z-index:2;left:50%;top:50%;width:11px;height:11px;transform:translate(-50%,-50%);opacity:.5;pointer-events:none;transition:opacity .2s}
+#cross.off{opacity:0}
+#cross::before,#cross::after{content:"";position:absolute;background:var(--fg)}
+#cross::before{left:5px;top:0;width:1px;height:11px}
+#cross::after{top:5px;left:0;height:1px;width:11px}
+.cap{position:absolute;font:400 11px/1.4 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--fg);white-space:nowrap;transition:opacity .15s}
+.cap.t{bottom:100%;margin-bottom:8px} .cap.b{top:100%;margin-top:8px}
+.cap.l{left:0} .cap.r{right:0;text-align:right}
+.cap .d{color:var(--dim)}
+.tally{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--rec);margin-right:6px;vertical-align:1px}
+#vf.empty .cap{opacity:0}
+/* sound control: only on pieces whose file keeps its audio */
+#snd{pointer-events:auto;padding:4px 6px;margin:-4px 8px -4px -6px;color:var(--fg)}
+#snd[aria-pressed="false"]{color:var(--dim)}
+#vf.empty #snd{pointer-events:none}
+#vf.has-snd .ftxt{display:none}
+#hint{transition:opacity .8s}
+.used #hint{opacity:0}
+/* videos play off-screen and are drawn into the canvas */
+#reels{position:fixed;left:0;top:0;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none}
+#reels video{width:1px;height:1px}
 
-.status{
-  position:absolute;right:16px;bottom:14px;margin:0;font-size:12.5px;color:var(--muted);
-  pointer-events:none;background:var(--paper);padding:1px 0 1px 6px;
-}
+[hidden]{display:none!important}
+/* Loader: title, a hairline that fills as the pieces load, a count and a blinking tally light */
+#intro{position:fixed;inset:0;z-index:9;background:var(--bg);display:grid;place-items:center;font:400 11px/1 var(--mono);letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+.ld{position:relative;display:grid;justify-items:center;gap:14px;padding:26px 34px 22px}
+.ld-t{color:var(--fg)}
+.ld-bar{width:150px;height:1px;background:var(--faint);overflow:hidden}
+.ld-bar i{display:block;height:100%;width:0;background:var(--fg);transition:width .3s ease-out}
+.ld-n{display:flex;align-items:center;gap:8px;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.ld-n .tally{margin:0;animation:rec 1s steps(1) infinite}
+@keyframes rec{50%{opacity:.15}}
+.ld.msg .ld-bar,.ld.msg .ld-n{display:none}
 
-@media (max-width:760px){
-  .side{padding:20px 20px 4px;bottom:auto;width:auto;right:0}
-  .wm{font-size:40px}
-  .bio{font-size:14px;margin-top:10px}
-  .side .nav,.side .contact{display:none}
+/* inside the site: the sidebar already names the page, and its edge should meet the canvas cleanly */
+.embed .tl .name{display:none}
+.embed .vignette{display:none}
+
+/* the film grain stays on when embedded; add ?grain=off to the embed address to hide it */
+.nograin .grain{display:none}
+/* Phones: no readouts, so the site's own header and icons sit over the images; captions trimmed to fit small frames */
+@media (max-width:640px){
+  .hud{display:none}
+  #vf .cap.b.r .tally, #vf .cap.b.r .ftxt{display:none}
+  #snd{margin-right:-6px}
+  #vf .c{width:12px;height:12px}
 }
+@media (prefers-reduced-motion:reduce){.grain{animation:none}#vf .c{transition:none}.ld-n .tally{animation:none}.ld-bar i{transition:none}}
 </style>
+
 </head>
 <body>
-<div class="page" id="page">
-  <aside class="side">
-    <div class="wm"><span>ralph</span><span class="l2">Sagrott</span></div>
-    <p class="bio">a graphic designer raised in Miami, based in London, working across identity, campaign and experiential.</p>
-    <div class="nav"><span>Work</span><span>About</span><span>Experiments</span></div>
-    <div class="contact"><span>Email</span><span>Instagram</span><span>LinkedIn</span></div>
-  </aside>
-  <main class="field" id="field" aria-label="Project index. Square points in the grid open projects.">
-    <canvas id="grid" aria-hidden="true"></canvas>
-    <div id="cards"></div>
-    <p class="status" id="status" aria-live="polite"></p>
-  </main>
+<canvas id="stage" aria-label="Experiments canvas. Drag to pan, scroll to zoom, click a piece to bring it into the viewfinder."></canvas>
+<div class="vignette"></div>
+<div class="grain"></div>
+
+<i id="cross" aria-hidden="true"></i>
+<div id="vf" class="empty" aria-live="polite">
+  <i class="c c1"></i><i class="c c2"></i><i class="c c3"></i><i class="c c4"></i>
+  <div class="cap t l"><span class="d" id="cIdx">[00]</span>&nbsp; <span id="cTitle"></span></div>
+  <div class="cap b l"><span id="cYear"></span>&nbsp; <span class="d" id="cMed"></span></div>
+  <div class="cap b r"><button id="snd" type="button" aria-pressed="false" hidden>Sound off</button><span class="tally"></span><span class="ftxt">Focus</span></div>
 </div>
 
+<div class="hud tl"><div class="name">Experiments</div><div id="total">[00] pieces</div></div>
+<div class="hud tr">
+  <div class="lens"><span id="mm">50</span><small>mm</small></div>
+  <div id="xy">X 0000 · Y 0000</div>
+  <div class="move" id="move">Hold</div>
+</div>
+<div class="hud bl" id="hint">Drag to pan · Scroll to zoom · Click to cut · ← → to step</div>
+<div class="hud bc">
+  <button id="prev" aria-label="Previous experiment">←</button>
+  <span id="count">00 / 00</span>
+  <button id="next" aria-label="Next experiment">→</button>
+</div>
+<div class="hud br">
+  <button id="overview">Overview · 24mm</button>
+</div>
+
+<div id="intro" role="status" aria-live="polite">
+  <div class="ld" id="ld">
+    <div class="ld-t" id="ldT">Experiments</div>
+    <div class="ld-bar"><i id="ldFill"></i></div>
+    <div class="ld-n"><span class="tally"></span><span id="ldN">Loading</span></div>
+  </div>
+</div>
+<div id="reels" aria-hidden="true"></div>
+
 <script>
-/* ---------- Content ----------
-   The projects live in projects.txt, next to this file. Edit that, not this.
-   Each project's images live in images/<project-name>/01.jpg, 02.jpg, 03.jpg ...
-   The page finds and measures the images itself. */
-let PROJECTS = [];
-
-/* ---------- Setup ---------- */
+(() => {
+try{ if (window.self !== window.top) document.documentElement.classList.add('embed'); }catch(err){ document.documentElement.classList.add('embed'); }
+/* Which side meets the sidebar gets the focus falloff.
+   ?edge=left | top | none in the embed address sets it; otherwise, when embedded, it is left on wide
+   screens and top on narrow ones (where the sidebar sits above the page). */
 const params = new URLSearchParams(location.search);
-const page = document.getElementById('page');
-// The sidebar is a stand-in for the Cargo sidebar, for previewing only. Add ?sidebar to the URL to see it.
-const SHOW_SIDEBAR = false || params.has('sidebar');
-if (!SHOW_SIDEBAR || params.has('embed')) page.classList.add('embed');
-if (params.get('theme') === 'dark') document.documentElement.dataset.theme = 'dark';
-if (params.get('theme') === 'auto') delete document.documentElement.dataset.theme;
-// A fresh layout on every load; add ?seed=123 to the URL to pin one layout
-const SEED = params.has('seed') ? parseInt(params.get('seed'), 10) : Math.floor(Math.random() * 1e9);
-// Keep project points out of the left part of the grid, where the Cargo sidebar sits.
-// 20 = the left 20% of the width. Change it here, or add ?clear=25 to the iframe address.
-// Only applies on wider screens; on phones the whole width is used.
-const CLEAR_LEFT = (params.has('clear') ? parseFloat(params.get('clear')) : 20) / 100;
+const EMBED = document.documentElement.classList.contains('embed');
+if (params.get('grain') === 'off') document.documentElement.classList.add('nograin');
+let edgeSide = null, edgeAuto = !params.has('edge');
+const setEdge = side => { edgeSide = (side === 'left' || side === 'top') ? side : null; };
+const autoEdge = () => { if (edgeAuto) setEdge(EMBED ? (innerWidth < 640 ? 'top' : 'left') : null); };
+setEdge(params.get('edge')); autoEdge();
+addEventListener('message', ev => { if (ev.source === window.parent && ev.data && ev.data.edge){ edgeAuto = false; setEdge(ev.data.edge); } });
 
+/* The pieces come from experiments.json, which is rebuilt automatically whenever files are added on GitHub. */
+const LIST_URL = 'experiments.json';
+
+/* ---------- utils ---------- */
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const coarse = matchMedia('(pointer: coarse)').matches;
-const field = document.getElementById('field');
-const canvas = document.getElementById('grid');
-const ctx = canvas.getContext('2d');
-const cardsEl = document.getElementById('cards');
-const statusEl = document.getElementById('status');
+let seed = (Math.random()*1e9)|0;
+const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const wrap = (v,m) => ((v % m) + m * 1.5) % m - m / 2;
+const ease = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+const pad = (n,l=2) => String(Math.floor(Math.abs(n))).padStart(l,'0');
+const $ = id => document.getElementById(id);
 
-const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
-const easeOut = t => 1 - Math.pow(1 - t, 3);
-const easeInOut = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
-const pad2 = n => String(n).padStart(2, '0');
-function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+/* ---------- world ---------- */
+// one repeating tile of the endless canvas, a loose grid sized to the number of pieces
+const CELL_W = 640, CELL_H = 500;
+let COLS = 1, ROWS = 1, TILE_W = CELL_W, TILE_H = CELL_H;
+const items = [];
 
-let W=0,H=0,dpr=1,sp=26,cols=0,rows=0,ox=0,oy=0,S=180;
-let nodes = [];            // placed projects
-let nodeGrid = new Map();  // cell key -> node
-let ink='#252525', muted='#8c8c8c';
-let dotSprite = null;
-const FONT = getComputedStyle(document.documentElement).getPropertyValue('--font').trim();
-
-/* ---------- Loading projects.txt ---------- */
-const slugify = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
-  .replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-
-function parseProjects(txt){
-  return txt.split(/\r?\n/)
-    .map(line => line.trim())
-    .filter(line => line && !line.startsWith('#'))
-    .map(line => {
-      const [title = '', year = '', tag = '', href = ''] = line.split('|').map(s => s.trim());
-      return { title, year, tag, href, slug: slugify(title), imgs: [], dead: false };
-    })
-    .filter(p => p.title);
-}
-
-/* ---------- Images: found by number, measured once loaded ---------- */
-const EXTS = ['jpg', 'png', 'jpeg'];
-
-// Look for image i (0 = 01.jpg) of a project, trying each file type in turn
-function probe(p, i){
-  if (p.imgs[i]) return p.imgs[i];
-  const rec = { ok: undefined, src: '', w: 4, h: 3 };
-  p.imgs[i] = rec;
-  const tryExt = e => {
-    if (e >= EXTS.length){ rec.ok = false; imageSettled(p, i); return; }
-    const src = `images/${p.slug}/${pad2(i + 1)}.${EXTS[e]}`;
-    const im = new Image();
-    im.onload = () => { rec.ok = true; rec.src = src; rec.w = im.naturalWidth; rec.h = im.naturalHeight; imageSettled(p, i); };
-    im.onerror = () => tryExt(e + 1);
-    im.src = src;
-  };
-  tryExt(0);
-  return rec;
-}
-
-function imageSettled(p, i){
-  if (i === 0 && p.imgs[0].ok === false){
-    // no first image: leave the project out rather than show an empty frame
-    p.dead = true;
-    console.warn(`No images found for "${p.title}". Expected images/${p.slug}/01.jpg`);
-    const n = nodes.find(n => PROJECTS[n.i] === p);
-    if (n){
-      nodes = nodes.filter(x => x !== n);
-      nodeGrid.delete(n.ci + ',' + n.ri);
-      n.el.style.display = 'none';
-      updateStatus();
-    }
-    return;
-  }
-  const n = nodes.find(n => PROJECTS[n.i] === p);
-  if (n && n.k === i) applyImage(n);
-}
-
-// The image to show on the next visit: the next number, or back to 01 after the last
-function nextIndex(p, k){
-  const r = p.imgs[k + 1] || probe(p, k + 1);
-  return r.ok === false ? 0 : k + 1;
-}
-
-/* ---------- Cards (DOM) ---------- */
-let cards = [];
-function buildCards(){
-  cards = PROJECTS.map((p, i) => {
-    const a = document.createElement('a');
-    a.className = 'card off';
-    a.href = p.href || '#';
-    a.target = '_top';
-    a.setAttribute('aria-label', p.tag ? `${p.title}, ${p.tag}` : p.title);
-    const clip = document.createElement('span'); clip.className = 'clip';
-    const img = document.createElement('img'); img.alt = ''; img.decoding = 'async';
-    clip.appendChild(img); a.appendChild(clip);
-    for (const c of ['tl', 'tr', 'bl', 'bb']){ const s = document.createElement('span'); s.className = 'c ' + c; a.appendChild(s); }
-    const cap = document.createElement('span'); cap.className = 'cap';
-    if (p.year){ const y = document.createElement('span'); y.className = 'idx'; y.textContent = `[${p.year}]`; cap.appendChild(y); }
-    cap.appendChild(document.createTextNode(p.title));
-    if (p.tag){ const g = document.createElement('span'); g.className = 'tag'; g.textContent = p.tag; cap.appendChild(g); }
-    a.appendChild(cap);
-    a.addEventListener('click', e => { if (a.getAttribute('href') === '#') e.preventDefault(); });
-    a.addEventListener('focus', () => { forced = nodes.find(n => n.i === i) || null; });
-    a.addEventListener('blur', () => { if (forced && forced.i === i) forced = null; });
-    a._img = img;
-    cardsEl.appendChild(a);
-    return a;
-  });
-}
-
-async function loadProjects(){
-  try {
-    const res = await fetch('projects.txt', { cache: 'no-cache' });
-    if (!res.ok) throw new Error(res.status);
-    PROJECTS = parseProjects(await res.text());
-  } catch (e) {
-    statusEl.textContent = 'projects.txt could not be loaded';
-    return;
-  }
-  buildCards();
-  PROJECTS.forEach(p => probe(p, 0));
-  if (W > 0) placeNodes();
-}
-const found = new Set();
-
-function cardDims(p){  // p is one image {w, h}
-  const a = p.w / p.h;
-  if (a >= 1) { const w = S * 1.22; return { w: Math.round(w), h: Math.round(w / a) }; }
-  const h = S * 1.12; return { w: Math.round(h * a), h: Math.round(h) };
-}
-
-function readColors(){
-  const cs = getComputedStyle(document.documentElement);
-  ink = cs.getPropertyValue('--ink').trim() || ink;
-  muted = cs.getPropertyValue('--muted').trim() || muted;
-  const r = 1.15, s = Math.ceil((r * 2 + 2) * dpr);
-  dotSprite = document.createElement('canvas');
-  dotSprite.width = dotSprite.height = s;
-  const g = dotSprite.getContext('2d');
-  g.fillStyle = ink; g.beginPath(); g.arc(s/2, s/2, r * dpr, 0, Math.PI*2); g.fill();
-}
-
-/* ---------- Layout ---------- */
 function layout(){
-  const r = field.getBoundingClientRect();
-  W = r.width; H = r.height;
-  dpr = Math.min(window.devicePixelRatio || 1, 2);
-  canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  sp = W < 560 ? 22 : 26;
-  cols = Math.max(1, Math.floor((W - sp) / sp) + 1);
-  rows = Math.max(1, Math.floor((H - sp) / sp) + 1);
-  ox = (W - (cols - 1) * sp) / 2;
-  oy = (H - (rows - 1) * sp) / 2;
-  S = Math.max(96, Math.min(210, Math.min(W, H) * 0.24));
-  readColors();
-  placeNodes();
-}
-
-function placeNodes(){
-  const old = new Map(nodes.map(n => [n.i, { p: n.p, k: n.k }]));
-  let best = [];
-  let minD = S * 1.35;
-  for (let attempt = 0; attempt < 14; attempt++){
-    const rng = mulberry32(SEED + attempt * 101);
-    const placed = [];
-    const d = { w: Math.round(S * 1.22), h: Math.round(S * 1.12) };  // the largest any card can be
-    for (let i = 0; i < PROJECTS.length; i++){
-      if (PROJECTS[i].dead) continue;
-      for (let k = 0; k < 700; k++){
-        const ci = Math.floor(rng() * cols), ri = Math.floor(rng() * rows);
-        const x = ox + ci * sp, y = oy + ri * sp;
-        const xMin = W > 760 ? W * CLEAR_LEFT : 0;
-        if (x - d.w/2 < xMin + 12 || x + d.w/2 > W - 12) continue;
-        if (y - d.h/2 < 12 || y + d.h/2 > H - 12) continue;
-        const roomBelow = y + d.h/2 + 52 < H - 8, roomAbove = y - d.h/2 - 52 > 8;
-        if (!roomBelow && !roomAbove) continue;
-        if (x + d.w/2 > W - 150 && y + d.h/2 > H - 40) continue; // keep the status line clear
-        if (placed.some(n => Math.hypot(n.x - x, n.y - y) < minD)) continue;
-        placed.push({ i, ci, ri, x, y, p: old.get(i)?.p || 0, k: old.get(i)?.k || 0, wasOpen: false });
-        break;
-      }
-    }
-    if (placed.length > best.length) best = placed;
-    if (placed.length === PROJECTS.filter(p => !p.dead).length) break;
-    minD *= 0.9;
-    if (attempt > 6) S = Math.max(84, S * 0.93);
-  }
-  nodes = best;
-  nodeGrid = new Map(nodes.map(n => [n.ci + ',' + n.ri, n]));
-  cards.forEach((el, i) => {
-    const n = nodes.find(n => n.i === i);
-    el.style.display = n ? '' : 'none';
-    if (!n) return;
-    el.style.left = n.x + 'px'; el.style.top = n.y + 'px';
-    n.el = el; n.last = -1;
-    applyImage(n);
+  COLS = Math.max(2, Math.ceil(Math.sqrt(items.length * 1.3)));
+  ROWS = Math.max(2, Math.ceil(items.length / COLS));
+  TILE_W = COLS * CELL_W; TILE_H = ROWS * CELL_H;
+  // shuffle which piece sits in which cell, so each visit starts with a different arrangement
+  const order = items.map((p,i)=>i).sort(()=>rnd()-.5);
+  order.forEach((pi, cell) => {
+    const it = items[pi];
+    const col = cell % COLS, row = Math.floor(cell / COLS);
+    const ar = it.ar;
+    let w = ar >= 1 ? 230 + rnd()*170 : 170 + rnd()*90;
+    let h = w / ar; if (h > 330){ h = 330; w = h * ar; }
+    const mx = (CELL_W - w)/2 - 50, my = (CELL_H - h)/2 - 50;
+    it.cx = col*CELL_W + CELL_W/2 + (rnd()*2-1)*Math.max(0,mx);
+    it.cy = row*CELL_H + CELL_H/2 + (rnd()*2-1)*Math.max(0,my);
+    it.w = w; it.h = h; it.cell = cell;
   });
-  updateStatus();
+  // index numbers follow reading order on the sheet, so ← → steps to a neighbour
+  items.slice().sort((a,b)=>a.cell-b.cell).forEach((it,i)=>it.n=i);
 }
 
-// Start fetching the image this project will show on its next visit
-function preloadNext(n){
-  const p = PROJECTS[n.i];
-  probe(p, n.k + 1);
+function grayOf(src){
+  const g = document.createElement('canvas'); g.width = src.width; g.height = src.height;
+  const x = g.getContext('2d'); x.drawImage(src,0,0);
+  try{
+    const d = x.getImageData(0,0,g.width,g.height), a = d.data;
+    for(let i=0;i<a.length;i+=4){ let l = .3*a[i]+.59*a[i+1]+.11*a[i+2]; l = clamp((l-128)*1.08+118,0,255); a[i]=a[i+1]=a[i+2]=l; }
+    x.putImageData(d,0,0);
+  }catch(e){ /* tainted canvas (opened from file://): fall back to colour */ }
+  return g;
 }
 
-// Show image k of a project and size the card to it
-function applyImage(n){
-  const p = PROJECTS[n.i];
-  let rec = p.imgs[n.k] || probe(p, n.k);
-  if (rec.ok === false){ n.k = 0; rec = p.imgs[0]; }
-  const d = cardDims(rec);
-  n.w = d.w; n.h = d.h;
-  n.el.style.width = d.w + 'px'; n.el.style.height = d.h + 'px';
-  n.el.classList.toggle('above', n.y + d.h/2 + 52 > H - 8);
-  if (rec.ok && n.el._img.getAttribute('src') !== rec.src) n.el._img.src = rec.src;
+function toCanvas(im){
+  const s = Math.min(1, 900 / Math.max(im.naturalWidth, im.naturalHeight));
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(im.naturalWidth*s)); c.height = Math.max(1, Math.round(im.naturalHeight*s));
+  c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+  return c;
 }
 
-/* ---------- Interaction state ---------- */
-const R1 = coarse ? 120 : 165, R0 = 52;
-const t0 = performance.now();
-const pointer = { x: 0, y: 0, active: false };
-const focus = { x: 0, y: 0, on: false };
-const brk = { x: 0, y: 0, a: 0 };
-let forced = null;
-
-function local(e){ const r = field.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
-field.addEventListener('pointermove', e => {
-  if (e.pointerType === 'touch') return;
-  const p = local(e); pointer.x = p.x; pointer.y = p.y;
-  if (!pointer.active){ pointer.active = true; if (!focus.on){ focus.x = p.x; focus.y = p.y; } }
-});
-field.addEventListener('pointerleave', e => {
-  if (e.pointerType === 'touch') return;
-  pointer.active = false;
-});
-field.addEventListener('pointerdown', e => {
-  if (e.pointerType !== 'touch') return;
-  const p = local(e); pointer.x = p.x; pointer.y = p.y; pointer.active = true;
-  focus.x = p.x; focus.y = p.y;
-});
-
-function updateStatus(){
-  const total = nodes.length;
-  if (!total){ statusEl.textContent = ''; return; }
-  statusEl.textContent = found.size === 0 ? `${total} project${total === 1 ? ' is' : 's are'} hidden in the grid`
-    : found.size === total ? `Found all ${total}` : `Found ${found.size} of ${total}`;
+function makeItem(p){
+  const it = { ...p, f:0, img:null, gray:null, vid:null, ar: (p.w && p.h) ? p.w / p.h : 1.5, ready:false };
+  const im = new Image();
+  im.decoding = 'async';
+  im.onload = () => { it.img = toCanvas(im); it.gray = grayOf(it.img); it.ready = true; loadedOne(); };
+  im.onerror = () => { it.failed = true; loadedOne(); };
+  im.src = p.type === 'video' ? p.poster : p.src;
+  return it;
 }
 
-/* ---------- Frame ---------- */
+/* ---------- video ----------
+   Only the piece in focus plays. A few recent videos stay loaded so stepping back is instant. */
+const reels = document.getElementById('reels');
+const live = [];
+let soundOn = false;
+function playVideo(it){
+  if (!it.vid){
+    const v = document.createElement('video');
+    v.muted = true; v.loop = true; v.playsInline = true; v.preload = 'auto';
+    v.setAttribute('playsinline', ''); v.setAttribute('muted', '');
+    v.src = it.src;
+    reels.appendChild(v);
+    it.vid = v; live.push(it);
+    while (live.length > 3){
+      const old = live.find(x => x !== it);
+      if (!old) break;
+      old.vid.pause(); old.vid.removeAttribute('src'); old.vid.load(); old.vid.remove(); old.vid = null;
+      live.splice(live.indexOf(old), 1);
+    }
+  }
+  const v = it.vid;
+  v.muted = !(soundOn && it.sound);
+  if (v.paused){
+    const p = v.play();
+    // if the browser refuses sound, fall back to playing muted
+    if (p && p.catch) p.catch(() => { v.muted = true; v.play().catch(() => {}); });
+  }
+}
+function stopVideo(it){ if (it.vid){ it.vid.muted = true; if (!it.vid.paused) it.vid.pause(); } }
+
+/* ---------- camera ---------- */
+const cv = $('stage'), ctx = cv.getContext('2d');
+let VW = 0, VH = 0, DPR = 1, minS = .3, maxS = 2.4, vfW = 440, vfH = 290;
+const cam = { x: TILE_W/2, y: TILE_H/2, s: .8 };
+let vel = { x:0, y:0 }, tween = null, dragging = false, moveLabel = 'Hold', lastMoveAt = 0;
+
+function resize(){
+  DPR = Math.min(2, devicePixelRatio || 1);
+  VW = innerWidth; VH = innerHeight;
+  cv.width = VW*DPR; cv.height = VH*DPR;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  minS = Math.min(VW / TILE_W, VH / TILE_H) * .94;
+  maxS = Math.max(minS * 5, Math.min(VW, VH) / 260);
+  vfW = VW < 640 ? VW * .46 : clamp(VW * .34, 320, 520);
+  vfH = vfW * (VW < 640 ? .8 : 2/3);
+  if (vfH > VH * .5){ vfH = VH * .5; vfW = vfH * 1.5; }
+  document.documentElement.style.setProperty('--vfw', vfW + 'px');
+  document.documentElement.style.setProperty('--vfh', vfH + 'px');
+  cam.s = clamp(cam.s, minS, maxS);
+}
+
+const focal = s => 24 * Math.pow(s / minS, Math.log(135/24) / Math.log(maxS / minS));
+
+function zoomAt(px, py, factor){
+  const s2 = clamp(cam.s * factor, minS, maxS);
+  const wx = cam.x + (px - VW/2) / cam.s, wy = cam.y + (py - VH/2) / cam.s;
+  cam.s = s2;
+  cam.x = wx - (px - VW/2) / s2; cam.y = wy - (py - VH/2) / s2;
+}
+
+function whip(tx, ty, ts, label, dur){
+  vel.x = vel.y = 0;
+  const d = Math.hypot((tx-cam.x)*cam.s, (ty-cam.y)*cam.s);
+  tween = { fx:cam.x, fy:cam.y, fs:cam.s, tx, ty, ts:clamp(ts,minS,maxS), t0:performance.now(), dur: reduce ? 1 : (dur || clamp(380 + d*.25, 420, 760)) };
+  moveLabel = label;
+}
+
+/* nearest copy of an item to the camera (the canvas repeats forever) */
+const nearest = it => ({ x: cam.x + wrap(it.cx - cam.x, TILE_W), y: cam.y + wrap(it.cy - cam.y, TILE_H) });
+const fitScale = it => Math.min((VW - (VW < 640 ? 48 : 160)) * .82 / it.w, (VH - (VW < 640 ? 260 : 150)) * .86 / it.h);
+
+function cutTo(it){ const p = nearest(it); whip(p.x, p.y, fitScale(it), 'Whip pan'); }
+function step(dir){
+  const sorted = items.slice().sort((a,b)=>a.n-b.n);
+  const cur = focused ? focused.n : -1;
+  const next = sorted[(cur + dir + sorted.length) % sorted.length];
+  cutTo(next);
+}
+function overview(){
+  const tx = cam.x + wrap(TILE_W/2 - cam.x, TILE_W), ty = cam.y + wrap(TILE_H/2 - cam.y, TILE_H);
+  whip(tx, ty, minS, 'Zoom out', 650);
+}
+
+/* ---------- drawing ---------- */
+let focused = null, lastFocused = null, trailAlpha = 1, speed = 0;
+const prev = { x: cam.x, y: cam.y, s: cam.s };
+
+function forEachCopy(fn){
+  const hw = VW / 2 / cam.s, hh = VH / 2 / cam.s;
+  for (const it of items){
+    const dx0 = wrap(it.cx - cam.x, TILE_W), dy0 = wrap(it.cy - cam.y, TILE_H);
+    const kx = Math.ceil((hw + it.w) / TILE_W), ky = Math.ceil((hh + it.h) / TILE_H);
+    for (let i = -kx; i <= kx; i++) for (let j = -ky; j <= ky; j++){
+      const dx = dx0 + i*TILE_W, dy = dy0 + j*TILE_H;
+      if (Math.abs(dx) - it.w/2 > hw || Math.abs(dy) - it.h/2 > hh) continue;
+      const sw = it.w * cam.s, sh = it.h * cam.s;
+      fn(it, VW/2 + dx*cam.s - sw/2, VH/2 + dy*cam.s - sh/2, sw, sh, dx, dy);
+    }
+  }
+}
+
 function frame(now){
-  // where the field is "looking"; with no pointer it simply rests as a grid
-  let tx, ty;
-  if (forced){ tx = forced.x; ty = forced.y; focus.on = true; }
-  else if (pointer.active){ tx = pointer.x; ty = pointer.y; focus.on = true; }
-  else { focus.on = false; }
-
-  if (focus.on){
-    const k = reduce ? 1 : forced ? 0.2 : 0.5;
-    focus.x += (tx - focus.x) * k; focus.y += (ty - focus.y) * k;
+  // camera motion
+  if (tween){
+    const k = clamp((now - tween.t0) / tween.dur, 0, 1), e = ease(k);
+    // zoom interpolates in log space so the lens change feels even
+    cam.s = Math.exp(Math.log(tween.fs) + (Math.log(tween.ts) - Math.log(tween.fs)) * e);
+    cam.x = tween.fx + (tween.tx - tween.fx) * e;
+    cam.y = tween.fy + (tween.ty - tween.fy) * e;
+    if (k >= 1) tween = null;
+    lastMoveAt = now;
+  } else if (!dragging && (Math.abs(vel.x) > .01 || Math.abs(vel.y) > .01)){
+    cam.x += vel.x / cam.s; cam.y += vel.y / cam.s;
+    vel.x *= .93; vel.y *= .93;
+    lastMoveAt = now;
   }
 
-  // which node is open
-  let nearest = null, nd = Infinity;
-  if (focus.on){
-    for (const n of nodes){ const d = Math.hypot(n.x - focus.x, n.y - focus.y); if (d < nd){ nd = d; nearest = n; } }
-  }
-  let maxP = 0;
-  for (const n of nodes){
-    let tp = 0;
-    if (forced) tp = n === forced ? 1 : 0;
-    else if (n === nearest && PROJECTS[n.i].imgs[n.k] && PROJECTS[n.i].imgs[n.k].ok){
-      const inside = Math.abs(focus.x - n.x) < n.w/2 + 14 && Math.abs(focus.y - n.y) < n.h/2 + 14 && n.p > 0.5;
-      const t = clamp01((R1 - nd) / (R1 - R0));
-      tp = inside ? 1 : t * t * (3 - 2 * t);
-    }
-    n.p = reduce ? (tp > 0.5 ? 1 : 0) : n.p + (tp - n.p) * (tp > n.p ? 0.1 : 0.13);
-    if (n.p < 0.002) n.p = 0;
-    if (n.p > 0.995) n.p = 1;
-    maxP = Math.max(maxP, n.p);
-    if (n.p !== n.last){
-      const el = n.el;
-      el.style.setProperty('--ph', easeOut(clamp01(n.p / 0.42)).toFixed(4));
-      el.style.setProperty('--pv', easeInOut(clamp01((n.p - 0.34) / 0.66)).toFixed(4));
-      el.style.setProperty('--pc', clamp01((n.p - 0.78) / 0.22).toFixed(4));
-      el.classList.toggle('off', n.p === 0);
-      el.classList.toggle('live', n.p > 0.6);
-      n.last = n.p;
-    }
-    if (n.p > 0.6 && !n.wasOpen){ n.wasOpen = true; preloadNext(n); }
-    // once it has fully folded away, queue the next image for the next visit
-    if (n.p === 0 && n.wasOpen){ n.wasOpen = false; n.k = nextIndex(PROJECTS[n.i], n.k); applyImage(n); }
-    if (n.p > 0.92 && !found.has(n.i)){ found.add(n.i); updateStatus(); }
-  }
+  // speed in screen px per frame drives the long-exposure trail
+  const ds = Math.abs(Math.log(cam.s / prev.s)) * Math.hypot(VW, VH) * .5;
+  const v = Math.hypot((cam.x - prev.x) * cam.s, (cam.y - prev.y) * cam.s) + ds;
+  speed += (v - speed) * .35;
+  prev.x = cam.x; prev.y = cam.y; prev.s = cam.s;
+  const target = reduce ? 1 : 1 - .84 * clamp((speed - 3) / 45, 0, 1);
+  trailAlpha += (target - trailAlpha) * (target > trailAlpha ? .18 : .5);
+  if (speed < .4) trailAlpha = 1;
 
-  draw(now, maxP);
-  requestAnimationFrame(frame);
-}
-
-
-function draw(now, maxP){
-  ctx.clearRect(0, 0, W, H);
-  const el = now - t0;
-  const R = 150, fx = focus.x, fy = focus.y, on = focus.on;
-  const ss = dotSprite.width / dpr, half = ss / 2;
-  const base = 0.24;
-
-  for (let c = 0; c < cols; c++){
-    const ia = reduce ? 1 : clamp01((el - 100 - c * 13) / 420);
-    if (ia <= 0) continue;
-    const bx = ox + c * sp;
-    for (let r = 0; r < rows; r++){
-      let x = bx, y = oy + r * sp, a = base;
-      if (on){
-        const dx = x - fx, dy = y - fy, d = Math.sqrt(dx*dx + dy*dy);
-        if (d < R){
-          const k = 1 - d / R;
-          if (!reduce && d > 0.01){ const push = k * k * 9; x += dx / d * push; y += dy / d * push; }
-          a += k * 0.42;
-        }
-      }
-      const n = nodeGrid.get(c + ',' + r);
-      if (n){
-        const s = 3.2;
-        ctx.globalAlpha = Math.min(1, a + 0.4) * ia * (1 - clamp01(n.p * 4));
-        ctx.fillStyle = ink;
-        ctx.fillRect(x - s/2, y - s/2, s, s);
-        continue;
-      }
-      ctx.globalAlpha = a * ia;
-      ctx.drawImage(dotSprite, x - half, y - half, ss, ss);
-    }
-  }
-
-  // registration brackets snapping to the nearest cell
-  const targetA = on && !forced ? (1 - clamp01(maxP * 3)) : 0;
-  brk.a += (targetA - brk.a) * 0.2;
-  if (brk.a > 0.01){
-    const ci = Math.max(0, Math.min(cols - 1, Math.round((fx - ox) / sp)));
-    const ri = Math.max(0, Math.min(rows - 1, Math.round((fy - oy) / sp)));
-    const bx = ox + ci * sp, by = oy + ri * sp;
-    const k = reduce ? 1 : 0.35;
-    if (Math.abs(brk.x - bx) > W) { brk.x = bx; brk.y = by; }
-    brk.x += (bx - brk.x) * k; brk.y += (by - brk.y) * k;
-    const h = sp * 0.5, L = 5;
-    ctx.globalAlpha = brk.a * 0.9;
-    ctx.strokeStyle = ink; ctx.lineWidth = 1;
-    const X = Math.round(brk.x) + 0.5, Y = Math.round(brk.y) + 0.5;
-    ctx.beginPath();
-    ctx.moveTo(X - h, Y - h + L); ctx.lineTo(X - h, Y - h); ctx.lineTo(X - h + L, Y - h);
-    ctx.moveTo(X + h - L, Y - h); ctx.lineTo(X + h, Y - h); ctx.lineTo(X + h, Y - h + L);
-    ctx.moveTo(X - h, Y + h - L); ctx.lineTo(X - h, Y + h); ctx.lineTo(X - h + L, Y + h);
-    ctx.moveTo(X + h - L, Y + h); ctx.lineTo(X + h, Y + h); ctx.lineTo(X + h, Y + h - L);
-    ctx.stroke();
-    ctx.globalAlpha = brk.a;
-    ctx.fillStyle = muted;
-    ctx.font = '10.5px ' + FONT;
-    const label = `[${pad2(ci)}, ${pad2(ri)}]`;
-    const right = X + h + 70 > W;
-    ctx.textAlign = right ? 'right' : 'left';
-    ctx.fillText(label, right ? X - h - 4 : X + h + 4, Y + h + 11);
-    ctx.textAlign = 'left';
-  }
   ctx.globalAlpha = 1;
+  ctx.fillStyle = trailAlpha >= .995 ? '#0a0a0b' : `rgba(10,10,11,${trailAlpha})`;
+  ctx.fillRect(0, 0, VW, VH);
+
+  // pick the piece in the viewfinder: centre nearest the crosshair, inside the brackets
+  let best = null, bestD = Infinity, bestRect = null;
+  forEachCopy((it, x, y, w, h, dx, dy) => {
+    const sx = dx * cam.s, sy = dy * cam.s;
+    const inside = Math.abs(sx) < vfW/2 && Math.abs(sy) < vfH/2;
+    const covers = Math.abs(sx) < w/2 && Math.abs(sy) < h/2;
+    if (!inside && !covers) return;
+    const d = Math.hypot(sx, sy);
+    if (d < bestD){ bestD = d; best = it; bestRect = { x, y, w, h }; }
+  });
+  focused = armed ? best : null;
+  frameBrackets(armed ? bestRect : null);
+
+  // draw
+  const label = cam.s * 300 > 70;
+  ctx.font = '400 10px "Geist Mono", ui-monospace, monospace';
+  ctx.textBaseline = 'top';
+  forEachCopy((it, x, y, w, h) => {
+    if (!it.ready) { ctx.globalAlpha = 1; ctx.strokeStyle = 'rgba(235,233,227,.18)'; ctx.strokeRect(x+.5,y+.5,w-1,h-1); return; }
+    ctx.globalAlpha = .55 + .45 * it.f;
+    ctx.drawImage(it.gray, x, y, w, h);
+    if (it.f > .01){
+      const v = it.vid, moving = v && v.readyState >= 2 && v.videoWidth;
+      ctx.globalAlpha = it.f; ctx.drawImage(moving ? v : it.img, x, y, w, h);
+    }
+    if (label){
+      ctx.globalAlpha = .45 * (1 - it.f);
+      ctx.fillStyle = '#ebe9e3';
+      ctx.textAlign = 'left';  ctx.fillText('[' + pad(it.n + 1) + ']', x, y + h + 7);
+      ctx.textAlign = 'right'; ctx.fillText(String(it.year), x + w, y + h + 7);
+    }
+  });
+  ctx.globalAlpha = 1;
+  falloff();
+
+  // ease focus; only the piece in focus plays
+  for (const it of items){
+    it.f += ((it === focused ? 1 : 0) - it.f) * .14;
+    if (it.type === 'video'){ if (it === focused) playVideo(it); else stopVideo(it); }
+  }
+
+  if (focused !== lastFocused) onFocusChange();
+  hud(now);
+  if (now - lastMoveAt > 140 && !dragging && !tween) moveLabel = 'Hold';
+  requestAnimationFrame(frame);
 }
 
-/* ---------- Boot ---------- */
-new ResizeObserver(() => layout()).observe(field);
-matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', readColors);
-(document.fonts ? document.fonts.ready : Promise.resolve()).then(() => {
-  layout();
-  requestAnimationFrame(frame);
+/* ---------- focus falloff ----------
+   Where the canvas meets the sidebar, pieces lose focus and sink into the black.
+   Drawn in the canvas: the edge strip is halved in size five times (each halving is a softer blur),
+   then the levels are laid back over each other with overlapping ramps, so the blur rises continuously. */
+const FALL = { lv: [], tmp: document.createElement('canvas') };
+const RAMPS = [[.78, 1], [.6, .9], [.42, .74], [.24, .56], [.06, .38]];  // per level: fully on below a, gone by b (0 = sidebar side)
+function falloff(){
+  if (!edgeSide) return;
+  const left = edgeSide === 'left';
+  const L = left ? clamp(VW * .2, 120, 260) : clamp(VH * .16, 90, 180);
+  const w = left ? L : VW, h = left ? VH : L;
+  const W = Math.round(w * DPR), H = Math.round(h * DPR);
+  if (W < 4 || H < 4) return;
+  // build the levels
+  let src = cv, sw = W, sh = H;
+  for (let i = 0; i < RAMPS.length; i++){
+    const c = FALL.lv[i] || (FALL.lv[i] = document.createElement('canvas'));
+    const lw = Math.max(1, Math.round(W / 2 ** (i + 1))), lh = Math.max(1, Math.round(H / 2 ** (i + 1)));
+    if (c.width !== lw || c.height !== lh){ c.width = lw; c.height = lh; }
+    const g = c.getContext('2d'); g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    g.clearRect(0, 0, lw, lh);
+    g.drawImage(src, 0, 0, sw, sh, 0, 0, lw, lh);
+    src = c; sw = lw; sh = lh;
+  }
+  // lay them back, blurriest last, each masked by its ramp
+  const t = FALL.tmp; if (t.width !== W || t.height !== H){ t.width = W; t.height = H; }
+  const tg = t.getContext('2d'); tg.imageSmoothingEnabled = true; tg.imageSmoothingQuality = 'high';
+  ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1;
+  RAMPS.forEach(([a, b], i) => {
+    const c = FALL.lv[i];
+    tg.globalCompositeOperation = 'copy';
+    tg.drawImage(c, 0, 0, c.width, c.height, 0, 0, W, H);
+    tg.globalCompositeOperation = 'destination-in';
+    const gr = left ? tg.createLinearGradient(0, 0, W, 0) : tg.createLinearGradient(0, 0, 0, H);
+    // smoothstep-shaped ramp, so no level starts or stops with a visible edge
+    for (let k = 0; k <= 8; k++){ const u = k / 8, s = u * u * (3 - 2 * u); gr.addColorStop(a + (b - a) * u, `rgba(0,0,0,${1 - s})`); }
+    tg.fillStyle = gr; tg.fillRect(0, 0, W, H);
+    ctx.drawImage(t, 0, 0);
+  });
+  // sink into the black along an eased curve
+  const fg = left ? ctx.createLinearGradient(0, 0, W, 0) : ctx.createLinearGradient(0, 0, 0, H);
+  for (let k = 0; k <= 12; k++){ const u = k / 12, s = Math.pow(1 - u, 2.2); fg.addColorStop(u, `rgba(10,10,11,${s.toFixed(3)})`); }
+  ctx.fillStyle = fg; ctx.fillRect(0, 0, W, H);
+  ctx.restore();
+}
+
+/* ---------- brackets ---------- */
+// glide the brackets to the focused piece's outline, kept clear of the screen edges so the captions stay readable
+const BR = { x: 0, y: 0, w: 0, h: 0, init: false };
+const crossEl = document.getElementById('cross'), vfEl = document.getElementById('vf');
+function frameBrackets(r){
+  let tx, ty, tw, th;
+  if (r){
+    // safe area keeps the captions clear of the corner readouts when a piece fills the screen
+    // phones keep clear of the site's header (top) and icons (bottom), and let the frame hug even small pieces
+    const nar = VW < 640, snd = focused && focused.sound;
+    const p = nar ? 8 : 12, mx = nar ? 12 : 28, top = nar ? 120 : 112, bot = nar ? 110 : 104;
+    const minW = Math.min(VW - mx * 2, nar ? (snd ? 190 : 60) : (snd ? 290 : 240)), minH = nar ? 44 : 90;
+    let x0 = Math.max(mx, r.x - p), y0 = Math.max(top, r.y - p);
+    let x1 = Math.min(VW - mx, r.x + r.w + p), y1 = Math.min(VH - bot, r.y + r.h + p);
+    // small pieces get a frame at least wide enough for the captions, centred on the piece
+    if (x1 - x0 < minW){ const c = clamp((x0 + x1) / 2, mx + minW / 2, VW - mx - minW / 2); x0 = c - minW / 2; x1 = c + minW / 2; }
+    if (y1 - y0 < minH){ const c = (y0 + y1) / 2; y0 = c - minH / 2; y1 = c + minH / 2; }
+    tx = x0; ty = y0; tw = x1 - x0; th = y1 - y0;
+  } else {
+    tw = vfW; th = vfH; tx = (VW - tw) / 2; ty = (VH - th) / 2;
+  }
+  const k = (!BR.init || reduce) ? 1 : .28;
+  BR.x += (tx - BR.x) * k; BR.y += (ty - BR.y) * k; BR.w += (tw - BR.w) * k; BR.h += (th - BR.h) * k;
+  BR.init = true;
+  vfEl.style.transform = `translate(${BR.x.toFixed(1)}px,${BR.y.toFixed(1)}px)`;
+  vfEl.style.width = BR.w.toFixed(1) + 'px'; vfEl.style.height = BR.h.toFixed(1) + 'px';
+  crossEl.classList.toggle('off', !!r);
+}
+
+/* ---------- HUD ---------- */
+const vf = $('vf');
+let afTimer = 0;
+function onFocusChange(){
+  lastFocused = focused;
+  if (!focused){ vf.classList.add('empty'); return; }
+  vf.classList.remove('empty');
+  $('cIdx').textContent = '[' + pad(focused.n + 1) + ']';
+  $('cTitle').textContent = focused.title;
+  $('cYear').textContent = focused.year;
+  $('cMed').textContent = focused.medium;
+  $('count').textContent = pad(focused.n + 1) + ' / ' + pad(items.length);
+  snd.hidden = !focused.sound;
+  vf.classList.toggle('has-snd', !!focused.sound);
+  showSound();
+  if (!reduce){ vf.classList.add('af'); clearTimeout(afTimer); afTimer = setTimeout(() => vf.classList.remove('af'), 160); }
+}
+
+const snd = $('snd');
+function showSound(){ snd.textContent = soundOn ? 'Sound on' : 'Sound off'; snd.setAttribute('aria-pressed', soundOn); }
+snd.addEventListener('click', () => {
+  soundOn = !soundOn; showSound();
+  if (focused && focused.vid){ focused.vid.muted = !(soundOn && focused.sound); if (focused.vid.paused) focused.vid.play().catch(() => {}); }
 });
-loadProjects();
+
+let hudCache = '';
+function hud(now){
+  const px = ((cam.x % TILE_W) + TILE_W) % TILE_W, py = ((cam.y % TILE_H) + TILE_H) % TILE_H;
+  const s = Math.round(focal(cam.s)) + '|' + Math.round(px) + '|' + Math.round(py) + '|' + moveLabel;
+  if (s === hudCache) return; hudCache = s;
+  $('mm').textContent = Math.round(focal(cam.s));
+  $('xy').textContent = `X ${pad(px,4)} · Y ${pad(py,4)}`;
+  $('move').textContent = moveLabel;
+}
+
+/* ---------- input ---------- */
+const pointers = new Map();
+let down = null, pinch = null, lastPt = null;
+
+function hitTest(px, py){
+  let hit = null;
+  forEachCopy((it, x, y, w, h, dx, dy) => { if (px >= x && px <= x+w && py >= y && py <= y+h) hit = { it, wx: cam.x + dx, wy: cam.y + dy }; });
+  return hit;
+}
+
+cv.addEventListener('pointerdown', e => {
+  cv.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
+  tween = null;
+  if (pointers.size === 1){
+    down = { x:e.clientX, y:e.clientY, t:performance.now() };
+    lastPt = { x:e.clientX, y:e.clientY, t:performance.now() };
+    vel.x = vel.y = 0; dragging = true; cv.classList.add('dragging');
+  } else if (pointers.size === 2){
+    const [a,b] = [...pointers.values()];
+    pinch = { d: Math.hypot(a.x-b.x, a.y-b.y), mx:(a.x+b.x)/2, my:(a.y+b.y)/2 };
+    down = null;
+  }
+});
+
+cv.addEventListener('pointermove', e => {
+  if (!pointers.has(e.pointerId)){
+    const h = hitTest(e.clientX, e.clientY);
+    cv.classList.toggle('hovering', !!h);
+    return;
+  }
+  const p = pointers.get(e.pointerId);
+  const dx = e.clientX - p.x, dy = e.clientY - p.y;
+  p.x = e.clientX; p.y = e.clientY;
+  if (pointers.size === 1){
+    cam.x -= dx / cam.s; cam.y -= dy / cam.s;
+    const now = performance.now(), dt = Math.max(1, now - lastPt.t);
+    vel.x = -(e.clientX - lastPt.x) / dt * 16; vel.y = -(e.clientY - lastPt.y) / dt * 16;
+    lastPt = { x:e.clientX, y:e.clientY, t:now };
+    moveLabel = 'Pan'; lastMoveAt = now;
+  } else if (pointers.size === 2 && pinch){
+    const [a,b] = [...pointers.values()];
+    const d = Math.hypot(a.x-b.x, a.y-b.y), mx = (a.x+b.x)/2, my = (a.y+b.y)/2;
+    cam.x -= (mx - pinch.mx) / cam.s; cam.y -= (my - pinch.my) / cam.s;
+    zoomAt(mx, my, d / pinch.d);
+    pinch = { d, mx, my };
+    moveLabel = 'Zoom'; lastMoveAt = performance.now();
+  }
+});
+
+function endPointer(e){
+  if (!pointers.has(e.pointerId)) return;
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinch = null;
+  if (pointers.size === 0){
+    dragging = false; cv.classList.remove('dragging');
+    if (performance.now() - lastPt.t > 80) vel.x = vel.y = 0;
+    if (down && Math.hypot(e.clientX - down.x, e.clientY - down.y) < 6 && performance.now() - down.t < 450){
+      vel.x = vel.y = 0;
+      const h = hitTest(e.clientX, e.clientY);
+      if (h){
+        const ts = fitScale(h.it);
+        // clicking the piece already framed pulls back out; otherwise whip to it
+        const framed = focused === h.it && Math.abs(Math.log(cam.s / ts)) < .08;
+        if (framed) whip(h.wx, h.wy, Math.max(minS, ts * .45), 'Zoom out');
+        else whip(h.wx, h.wy, ts, 'Whip pan');
+      }
+    }
+    down = null;
+  }
+}
+cv.addEventListener('pointerup', endPointer);
+cv.addEventListener('pointercancel', endPointer);
+
+addEventListener('wheel', e => {
+  e.preventDefault();
+  tween = null;
+  const unit = e.deltaMode === 1 ? 16 : 1;
+  if (e.ctrlKey){ zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * unit * .01)); moveLabel = 'Zoom'; }
+  else if (Math.abs(e.deltaX) > Math.abs(e.deltaY)){ cam.x += e.deltaX * unit / cam.s; moveLabel = 'Pan'; }
+  else { zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * unit * .0016)); moveLabel = 'Zoom'; }
+  lastMoveAt = performance.now();
+}, { passive:false });
+
+addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight'){ step(1); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft'){ step(-1); e.preventDefault(); }
+  else if (e.key === 'ArrowUp' || e.key === '+' || e.key === '='){ zoomAt(VW/2, VH/2, 1.25); moveLabel = 'Zoom'; lastMoveAt = performance.now(); }
+  else if (e.key === 'ArrowDown' || e.key === '-'){ zoomAt(VW/2, VH/2, .8); moveLabel = 'Zoom'; lastMoveAt = performance.now(); }
+  else if (e.key === '0' || e.key === 'Escape'){ overview(); }
+});
+
+$('prev').addEventListener('click', () => step(-1));
+$('next').addEventListener('click', () => step(1));
+$('overview').addEventListener('click', overview);
+addEventListener('resize', () => { resize(); autoEdge(); });
+
+const used = () => setTimeout(() => document.documentElement.classList.add('used'), 1500);
+// the page opens fully zoomed out with an empty viewfinder; focusing starts with the first interaction
+let armed = false;
+const arm = () => { armed = true; };
+['pointerdown', 'wheel', 'keydown'].forEach(t => addEventListener(t, arm, { once: true, passive: true }));
+['pointerdown', 'wheel', 'keydown'].forEach(t => addEventListener(t, used, { once: true, passive: true }));
+if (coarse) $('hint').textContent = 'Drag to pan · Pinch to zoom · Tap to cut';
+
+/* ---------- start: hold on black, then a hard cut in ---------- */
+function message(text){ $('intro').hidden = false; $('ld').classList.add('msg'); $('ldT').textContent = text; }
+
+/* loader: counts the still frames in, then cuts to the canvas (or after 6 seconds, whatever has loaded) */
+let loaded = 0, total = 0, cut = false, shownAt = performance.now();
+function showProgress(){
+  $('ldFill').style.width = (total ? loaded / total * 100 : 0) + '%';
+  $('ldN').textContent = pad(loaded) + ' / ' + pad(total);
+}
+function loadedOne(){ loaded++; showProgress(); if (loaded >= total) cutIn(); }
+function cutIn(){
+  if (cut) return; cut = true;
+  // hold the full bar for a beat, and never flash the loader for less than half a second
+  const wait = reduce ? 0 : Math.max(250, 600 - (performance.now() - shownAt));
+  setTimeout(() => { $('intro').hidden = true; }, wait);
+}
+fetch(LIST_URL, { cache: 'no-cache' })
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(data => {
+    const pieces = (data.pieces || []).filter(p => p && p.src && p.w && p.h);
+    if (!pieces.length){ message('No experiments yet'); return; }
+    total = pieces.length; showProgress();
+    pieces.forEach(p => items.push(makeItem(p)));
+    layout();
+    $('total').textContent = '[' + pad(items.length) + '] pieces';
+    $('count').textContent = '00 / ' + pad(items.length);
+    resize();
+    // open fully zoomed out on the whole sheet
+    cam.x = TILE_W / 2; cam.y = TILE_H / 2; cam.s = minS;
+    prev.x = cam.x; prev.y = cam.y; prev.s = cam.s;
+    requestAnimationFrame(frame);
+    setTimeout(cutIn, 6000);
+  })
+  .catch(() => message('The experiments could not be loaded'));
+})();
 </script>
+
 </body>
 </html>
