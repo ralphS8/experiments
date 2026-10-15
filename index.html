@@ -164,7 +164,7 @@ const EMBED = document.documentElement.classList.contains('embed');
 if (params.get('grain') === 'off') document.documentElement.classList.add('nograin');
 let edgeSide = null, edgeAuto = !params.has('edge');
 const setEdge = side => { edgeSide = (side === 'left' || side === 'top') ? side : null; };
-const autoEdge = () => { if (edgeAuto) setEdge(EMBED && innerWidth < 640 ? 'top' : null); };
+const autoEdge = () => { if (edgeAuto) setEdge(EMBED ? (innerWidth < 640 ? 'top' : 'left') : null); };
 setEdge(params.get('edge')); autoEdge();
 addEventListener('message', ev => { if (ev.source === window.parent && ev.data && ev.data.edge){ edgeAuto = false; setEdge(ev.data.edge); } });
 
@@ -433,7 +433,7 @@ const RAMPS = [[.78, 1], [.6, .9], [.42, .74], [.24, .56], [.06, .38]];  // per 
 function falloff(){
   if (!edgeSide) return;
   const left = edgeSide === 'left';
-  const L = left ? clamp(VW * .2, 120, 260) : clamp(VH * .16, 90, 180);
+  const L = left ? clamp(VW * .24, 160, 420) : clamp(VH * .16, 90, 180);
   const w = left ? L : VW, h = left ? VH : L;
   const W = Math.round(w * DPR), H = Math.round(h * DPR);
   if (W < 4 || H < 4) return;
