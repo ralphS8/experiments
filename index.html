@@ -40,7 +40,10 @@ body{font:13px/1.35 var(--sans);-webkit-font-smoothing:antialiased;touch-action:
 .tr{top:calc(var(--pad) + env(safe-area-inset-top,0px));right:var(--pad);text-align:right;display:grid;gap:2px}
 .bl{bottom:calc(var(--pad) + env(safe-area-inset-bottom,0px));left:var(--pad)}
 .br{bottom:calc(var(--pad) + env(safe-area-inset-bottom,0px));right:var(--pad);display:grid;justify-items:end;gap:8px;pointer-events:auto}
-.bc{bottom:calc(var(--pad) + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:4px;pointer-events:auto}
+.bc{bottom:calc(var(--pad) + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);display:grid;justify-items:center;gap:6px;pointer-events:auto}
+.bc .steps{display:flex;align-items:center;gap:4px}
+#hint{white-space:nowrap}
+.br #total{padding-right:8px}
 .lens{font-size:22px;line-height:1;color:var(--fg);letter-spacing:0}
 .lens small{font-size:11px;color:var(--dim);margin-left:2px}
 .move{color:var(--fg)}
@@ -123,19 +126,21 @@ button:focus-visible{outline:1px solid var(--fg);outline-offset:1px}
   <div class="cap b r"><button id="snd" type="button" aria-pressed="false" hidden>Sound off</button><span class="tally"></span><span class="ftxt">Focus</span></div>
 </div>
 
-<div class="hud tl"><div class="name">Experiments</div><div id="total">[00] pieces</div></div>
 <div class="hud tr">
   <div class="lens"><span id="mm">50</span><small>mm</small></div>
   <div id="xy">X 0000 · Y 0000</div>
   <div class="move" id="move">Hold</div>
 </div>
-<div class="hud bl" id="hint">Drag to pan · Scroll to zoom · Click to cut · ← → to step</div>
 <div class="hud bc">
-  <button id="prev" aria-label="Previous experiment">←</button>
-  <span id="count">00 / 00</span>
-  <button id="next" aria-label="Next experiment">→</button>
+  <div id="hint">Drag to pan · Scroll to zoom · Click to cut · ← → to step</div>
+  <div class="steps">
+    <button id="prev" aria-label="Previous experiment">←</button>
+    <span id="count">00 / 00</span>
+    <button id="next" aria-label="Next experiment">→</button>
+  </div>
 </div>
 <div class="hud br">
+  <div id="total">[00] pieces</div>
   <button id="overview">Overview · 24mm</button>
 </div>
 
@@ -159,7 +164,7 @@ const EMBED = document.documentElement.classList.contains('embed');
 if (params.get('grain') === 'off') document.documentElement.classList.add('nograin');
 let edgeSide = null, edgeAuto = !params.has('edge');
 const setEdge = side => { edgeSide = (side === 'left' || side === 'top') ? side : null; };
-const autoEdge = () => { if (edgeAuto) setEdge(EMBED ? (innerWidth < 640 ? 'top' : 'left') : null); };
+const autoEdge = () => { if (edgeAuto) setEdge(EMBED && innerWidth < 640 ? 'top' : null); };
 setEdge(params.get('edge')); autoEdge();
 addEventListener('message', ev => { if (ev.source === window.parent && ev.data && ev.data.edge){ edgeAuto = false; setEdge(ev.data.edge); } });
 
